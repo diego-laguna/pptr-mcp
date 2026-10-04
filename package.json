@@ -24,6 +24,7 @@
   "author": "",
   "license": "ISC",
   "type": "module",
+  "packageManager": "pnpm@10.18.3",
   "bugs": {
     "url": "https://github.com/diego-laguna/pptr-mcp/issues"
   },
