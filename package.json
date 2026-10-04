@@ -1,0 +1,29 @@
+{
+  "name": "pptr-mcp-test",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/index.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/diego-laguna/pptr-mcp.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/diego-laguna/pptr-mcp/issues"
+  },
+  "homepage": "https://github.com/diego-laguna/pptr-mcp#readme",
+  "devDependencies": {
+    "@fission-ai/openspec": "^1.14.0",
+    "@types/node": "^26.6.4",
+    "typescript": "^7.0.2"
+  }
+}
