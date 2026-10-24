@@ -1,30 +1,16 @@
 import { S3Client } from '@aws-sdk/client-s3';
-import {
-  ChangeMessageVisibilityCommand,
-  DeleteMessageCommand,
-  ReceiveMessageCommand,
-  SQSClient,
-} from '@aws-sdk/client-sqs';
+import { SQSClient } from '@aws-sdk/client-sqs';
 import { parseScrapeMessage, ScrapeMessage } from '../contracts/messages.js';
 import { ChromiumLauncher } from '../runner/browser.js';
 import { runWithBrowser } from '../runner/runner.js';
 import { SpecStore } from '../spec/spec-store.js';
 import { S3ObjectStore } from '../storage/object-store.js';
+import { QueueLoopOptions, runQueueLoop } from './queue-loop.js';
 import { SqsFinishedPublisher } from './sqs.js';
 import { ScrapeWorker } from './worker.js';
 
-export interface FargateLoopOptions {
-  client: Pick<SQSClient, 'send'>;
-  queueUrl: string;
+export interface FargateLoopOptions extends Omit<QueueLoopOptions, 'handle'> {
   worker: Pick<ScrapeWorker, 'handle'>;
-  /** Longest a single scrape may run. */
-  maxRunMs: number;
-  /** How often the message's visibility is extended while it runs. */
-  heartbeatMs: number;
-  /** Visibility timeout (seconds) applied at each heartbeat. */
-  visibilitySeconds: number;
-  shouldStop: () => boolean;
-  onError?: (error: unknown) => void;
 }
 
 /**
@@ -32,52 +18,15 @@ export interface FargateLoopOptions {
  * by the same queue, with a heartbeat that keeps the message invisible while
  * the scrape runs. Failures leave the message for redelivery, as on Lambda.
  */
-export async function runFargateLoop(
-  options: FargateLoopOptions,
-): Promise<void> {
-  const { client, queueUrl } = options;
-  while (!options.shouldStop()) {
-    const out = (await client.send(
-      new ReceiveMessageCommand({
-        QueueUrl: queueUrl,
-        MaxNumberOfMessages: 1,
-        WaitTimeSeconds: 20,
-        VisibilityTimeout: options.visibilitySeconds,
-      }),
-    )) as { Messages?: { Body?: string; ReceiptHandle?: string }[] };
-    for (const m of out.Messages ?? []) {
-      const started = Date.now();
-      const heartbeat = setInterval(() => {
-        void client
-          .send(
-            new ChangeMessageVisibilityCommand({
-              QueueUrl: queueUrl,
-              ReceiptHandle: m.ReceiptHandle,
-              VisibilityTimeout: options.visibilitySeconds,
-            }),
-          )
-          .catch((error) => options.onError?.(error));
-      }, options.heartbeatMs);
-      try {
-        const message: ScrapeMessage = parseScrapeMessage(
-          JSON.parse(m.Body ?? 'null'),
-        );
-        await options.worker.handle(message, {
-          remainingMs: () => options.maxRunMs - (Date.now() - started),
-        });
-        await client.send(
-          new DeleteMessageCommand({
-            QueueUrl: queueUrl,
-            ReceiptHandle: m.ReceiptHandle,
-          }),
-        );
-      } catch (error) {
-        options.onError?.(error);
-      } finally {
-        clearInterval(heartbeat);
-      }
-    }
-  }
+export function runFargateLoop(options: FargateLoopOptions): Promise<void> {
+  const { worker, ...loop } = options;
+  return runQueueLoop({
+    ...loop,
+    handle: async (body, remainingMs) => {
+      const message: ScrapeMessage = parseScrapeMessage(body);
+      await worker.handle(message, { remainingMs });
+    },
+  });
 }
 
 function required(name: string): string {

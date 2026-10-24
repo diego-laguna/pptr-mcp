@@ -1,0 +1,23 @@
+# Discovery worker image: Chromium, the Claude Agent SDK and the runner library.
+# Runs as an ECS Fargate service (0 to 2 tasks, scaled by queue depth).
+FROM node:22-slim AS build
+RUN corepack enable
+WORKDIR /app
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install --frozen-lockfile
+COPY tsconfig.json tsconfig.build.json nest-cli.json ./
+COPY src ./src
+RUN pnpm build
+RUN rm -rf node_modules && pnpm install --prod --frozen-lockfile --config.node-linker=hoisted
+
+FROM node:22-slim
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends chromium fonts-liberation ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
+ENV CHROME_PATH=/usr/bin/chromium
+WORKDIR /app
+COPY --from=build /app/package.json ./
+COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/dist ./dist
+USER node
+CMD ["node", "dist/discovery/worker/main.js"]

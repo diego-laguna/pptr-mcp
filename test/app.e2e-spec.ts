@@ -16,6 +16,9 @@ describe('AppController (e2e)', () => {
     process.env.RESULTS_QUEUE_URL ??= 'http://localhost/results';
     process.env.FAILED_SCRAPE_QUEUE_URL ??= 'http://localhost/failed';
     process.env.TRIGGER_QUEUE_URL ??= 'http://localhost/trigger';
+    process.env.DISCOVERY_QUEUE_URL ??= 'http://localhost/discovery';
+    process.env.DISCOVERY_FINISHED_QUEUE_URL ??=
+      'http://localhost/discovery-finished';
     process.env.RESULTS_BUCKET ??= 'placeholder';
     process.env.INTERNAL_API_TOKEN ??= 'placeholder';
     process.env.AWS_REGION ??= 'us-east-1';

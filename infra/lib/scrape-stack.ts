@@ -28,6 +28,7 @@ const LAMBDA_TIMEOUT = Duration.seconds(900);
 export class ScrapeStack extends Stack {
   readonly apiRole: iam.Role;
   readonly workerFunction: lambda.DockerImageFunction;
+  readonly bucket: s3.Bucket;
 
   constructor(scope: Construct, id: string, props: ScrapeStackProps = {}) {
     super(scope, id, props);
@@ -56,7 +57,7 @@ export class ScrapeStack extends Stack {
     });
 
     // --- storage -------------------------------------------------------
-    const bucket = new s3.Bucket(this, 'Bucket', {
+    const bucket = (this.bucket = new s3.Bucket(this, 'Bucket', {
       versioned: true,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       enforceSSL: true,
@@ -69,8 +70,15 @@ export class ScrapeStack extends Stack {
           expiration: Duration.days(retentionDays),
           noncurrentVersionExpiration: Duration.days(retentionDays),
         },
+        {
+          // Discovery candidates and evidence (screenshots included) follow the same retention.
+          id: 'expire-discovery-evidence',
+          prefix: 'discoveries/',
+          expiration: Duration.days(retentionDays),
+          noncurrentVersionExpiration: Duration.days(retentionDays),
+        },
       ],
-    });
+    }));
 
     // --- worker (outside any VPC, no database access) -----------------
     this.workerFunction = new lambda.DockerImageFunction(this, 'Worker', {

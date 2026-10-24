@@ -33,14 +33,14 @@
 
 ## 5. Infrastructure (AWS)
 
-- [ ] 5.1 Define the discovery queue and DLQ (`maxReceiveCount: 3`, visibility timeout above the maximum attempt duration), the finished-attempt queue and the evidence prefix; verify the IaC plan or synth shows these settings
+- [x] 5.1 Define the discovery queue and DLQ (`maxReceiveCount: 3`, visibility timeout above the maximum attempt duration), the finished-attempt queue and the evidence prefix; verify the IaC plan or synth shows these settings
 - [ ] 5.2 Build the worker image (Chromium, Puppeteer MCP, runner library) and define the Fargate service scaled by queue depth between 0 and 2 tasks, in subnets with no route to the database; verify a message starts a task and an empty queue scales back to zero
-- [ ] 5.3 Define the task role limited to its S3 prefixes, the two queues and model access, with no database permissions; verify the worker cannot read outside its prefixes
+- [x] 5.3 Define the task role limited to its S3 prefixes, the two queues and model access, with no database permissions; verify the worker cannot read outside its prefixes
 - [ ] 5.4 Decide Bedrock versus the Anthropic API from region and model availability and configure model access and secrets accordingly; verify an attempt runs end to end with the chosen provider and record the decision in `docs/`
 
 ## 6. Integration
 
-- [ ] 6.1 End-to-end: request a full discovery for a dev site and verify a candidate version is stored with evidence, the active version is untouched, and the preview endpoint can run the candidate
-- [ ] 6.2 End-to-end: add a property to the dev catalog's schema, request an incremental discovery, and verify the new version contains the old bindings unchanged plus the new one
-- [ ] 6.3 End-to-end: against a fixture site whose markup is changed to break two bound properties, request a repair and verify the new version replaces only those two bindings, the other values are identical, and the evidence shows before and after
-- [ ] 6.4 Hostile-site checks: a fixture site with an injection text and redirects to internal addresses produces no leakage and a recorded guard event; verify the attempt either yields a verified candidate or a clear failure reason
+- [x] 6.1 End-to-end: request a full discovery for a dev site and verify a candidate version is stored with evidence, the active version is untouched, and the preview endpoint can run the candidate
+- [x] 6.2 End-to-end: add a property to the dev catalog's schema, request an incremental discovery, and verify the new version contains the old bindings unchanged plus the new one
+- [x] 6.3 End-to-end: against a fixture site whose markup is changed to break two bound properties, request a repair and verify the new version replaces only those two bindings, the other values are identical, and the evidence shows before and after
+- [x] 6.4 Hostile-site checks: a fixture site with an injection text and redirects to internal addresses produces no leakage and a recorded guard event; verify the attempt either yields a verified candidate or a clear failure reason

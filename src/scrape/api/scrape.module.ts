@@ -59,7 +59,7 @@ export async function handleTrigger(
   }
 }
 
-const SQS = Symbol('SQS');
+export const SQS = Symbol('SQS');
 const FINALIZER = Symbol('RUN_FINALIZER');
 
 /** Placeholder until the reconciliation change supplies the real rules. */
@@ -166,6 +166,15 @@ class ScrapeConsumers implements OnApplicationBootstrap, OnApplicationShutdown {
 @Module({
   controllers: [InternalScrapeController],
   providers: [...providers, ScrapeConsumers],
-  exports: [ScrapeRequestService, RunsRepository],
+  exports: [
+    ScrapeRequestService,
+    RunsRepository,
+    InternalAuthGuard,
+    SCRAPE_CONFIG,
+    OBJECT_STORE,
+    SPEC_STORE,
+    ACTIVE_SPEC_RESOLVER,
+    SQS,
+  ],
 })
 export class ScrapeModule {}

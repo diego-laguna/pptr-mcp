@@ -43,7 +43,7 @@ function reasonsFor(locator: Locator): StabilityWarning['reason'][] {
     const xp = locator.xpath;
     if (/\[\d+\]/.test(xp) || /\[position\(\)/.test(xp))
       reasons.push('positional');
-    if (/^\/html/.test(xp) || xp.split('/').filter(Boolean).length > 6)
+    if (xp.startsWith('/html') || xp.split('/').filter(Boolean).length > 6)
       reasons.push('long_absolute_path');
     const classes = [
       ...xp.matchAll(
