@@ -22,5 +22,6 @@ export function resultKey(
   siteId: string,
   runId: string,
 ): string {
-  return `customers/${customerId}/catalogs/${catalogId}/sites/${siteId}/runs/${runId}/result.json`;
+  // A single leading `runs/` prefix lets one lifecycle rule expire raw results without touching specs.
+  return `runs/${customerId}/${catalogId}/${siteId}/${runId}/result.json`;
 }

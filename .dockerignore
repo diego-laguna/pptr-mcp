@@ -1,0 +1,9 @@
+node_modules
+dist
+infra
+test
+openspec
+docs
+migrations
+.git
+cdk.out
