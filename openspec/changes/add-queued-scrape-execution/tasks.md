@@ -2,22 +2,22 @@
 
 ## 1. Selector spec and contracts
 
-- [ ] 1.1 Add `puppeteer-core`, `@sparticuz/chromium` and AWS SDK (SQS, S3, EventBridge Scheduler) dependencies; verify `pnpm install` and `pnpm build` succeed
-- [ ] 1.2 Define types and validators for the scrape message (`runId`, `mode`, owner ids, `specKey`, `schemaVersion`, `limits`), the run result (`raw`, `value`, `issues` per item) and the finished-run message with failure reasons (`no_spec`, `invalid_spec`, `schema_mismatch`, `timeout`, `count_anomaly`, `parse_anomaly`, `stale_schema`, `error`); verify unit tests reject malformed messages
-- [ ] 1.3 Implement the selector spec schema validator (format version, steps and pagination vocabulary with bounded pages, required system-field bindings, locator syntax for CSS and XPath, transform vocabulary, no embedded code); verify unit tests cover every scenario in the selector-spec spec
-- [ ] 1.4 Implement the spec loader (immutable versions in S3 by key, local-file implementation for tests, rejection of overwriting a stored version); verify tests for found, missing (`no_spec`) and overwrite attempt
+- [x] 1.1 Add `puppeteer-core`, `@sparticuz/chromium` and AWS SDK (SQS, S3, EventBridge Scheduler) dependencies; verify `pnpm install` and `pnpm build` succeed
+- [x] 1.2 Define types and validators for the scrape message (`runId`, `mode`, owner ids, `specKey`, `schemaVersion`, `limits`), the run result (`raw`, `value`, `issues` per item) and the finished-run message with failure reasons (`no_spec`, `invalid_spec`, `schema_mismatch`, `timeout`, `count_anomaly`, `parse_anomaly`, `stale_schema`, `error`); verify unit tests reject malformed messages
+- [x] 1.3 Implement the selector spec schema validator (format version, steps and pagination vocabulary with bounded pages, required system-field bindings, locator syntax for CSS and XPath, transform vocabulary, no embedded code); verify unit tests cover every scenario in the selector-spec spec
+- [x] 1.4 Implement the spec loader (immutable versions in S3 by key, local-file implementation for tests, rejection of overwriting a stored version); verify tests for found, missing (`no_spec`) and overwrite attempt
 
 ## 2. Runner and transforms
 
-- [ ] 2.1 Implement the transform library (trim, regex capture, locale number parse, date parse with format and locale producing `YYYY-MM-DD`, text-to-enum map, text-to-boolean map, split); verify unit tests with Argentine formats (`12.990,50`, `15/10/2026`) and failure cases returning an issue
-- [ ] 2.2 Implement the runner core against local HTML fixtures: item discovery, property extraction by CSS or XPath from text or attribute, variant extraction, and `{raw, value, issues}` output; verify tests on a fixture page for a catalog with and without a variant property
-- [ ] 2.3 Implement navigation steps and the three pagination modes with page bounds; verify fixture-based tests for next button, URL template and infinite scroll, including stopping at the bound
-- [ ] 2.4 Implement the schema check (`schema_mismatch` when the spec binds an undeclared property, unbound new properties allowed) and preview limits (pages and items); verify unit tests for both
-- [ ] 2.5 Implement the deadline-aware execution that stops with a safety margin, closes the browser and returns `timeout`; verify with a fake slow page that no process is left running
+- [x] 2.1 Implement the transform library (trim, regex capture, locale number parse, date parse with format and locale producing `YYYY-MM-DD`, text-to-enum map, text-to-boolean map, split); verify unit tests with Argentine formats (`12.990,50`, `15/10/2026`) and failure cases returning an issue
+- [x] 2.2 Implement the runner core against local HTML fixtures: item discovery, property extraction by CSS or XPath from text or attribute, variant extraction, and `{raw, value, issues}` output; verify tests on a fixture page for a catalog with and without a variant property
+- [x] 2.3 Implement navigation steps and the three pagination modes with page bounds; verify fixture-based tests for next button, URL template and infinite scroll, including stopping at the bound
+- [x] 2.4 Implement the schema check (`schema_mismatch` when the spec binds an undeclared property, unbound new properties allowed) and preview limits (pages and items); verify unit tests for both
+- [x] 2.5 Implement the deadline-aware execution that stops with a safety margin, closes the browser and returns `timeout`; verify with a fake slow page that no process is left running
 
 ## 3. Worker, results and run records
 
-- [ ] 3.1 Implement the worker entrypoint (read message, load spec, run, write result to S3 under the owner prefix, send finished-run message, no database access); verify with fake S3 and queues that a large result is passed by reference and the worker makes no database call
+- [x] 3.1 Implement the worker entrypoint (read message, load spec, run, write result to S3 under the owner prefix, send finished-run message, no database access); verify with fake S3 and queues that a large result is passed by reference and the worker makes no database call
 - [ ] 3.2 Add the `scrape_runs` migration (mode, site, spec version, schema version, status, reason, counts, timestamps) with partial unique indexes for queued or running runs (production: one per site; preview: one per site and spec version); verify tests show a second pending production run for a site is refused, a second preview of the same version is refused, and a preview of another version or a production run alongside a preview is allowed
 - [ ] 3.3 Implement the results consumer and run finalizer in the API: apply the count-deviation and per-property parse-rate checks against the previous complete run, fail stale schema versions, hand typed values to reconciliation, and update the run record; verify tests for complete, `count_anomaly`, `parse_anomaly`, first run and `stale_schema`
 - [ ] 3.4 Publish `failed_scrape` events for failed production runs only, with deterministic failures not retried and transient failures redelivered up to 3 times before the DLQ; verify tests for a preview failure (no event), a `timeout` run (event, no reconciliation, stored products untouched) and a repeated transient failure
