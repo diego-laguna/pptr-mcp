@@ -47,7 +47,7 @@ Spec versions are immutable objects at `customers/{customerId}/sites/{siteId}/sp
 
 ```json
 { "runId": "5c7a0d52-3c4e-4d1a-9a0b-0e6c7f1b2a11", "outcome": "succeeded",
-  "resultKey": "customers/…/catalogs/…/sites/…/runs/5c7a…/result.json",
+  "resultKey": "runs/…/…/…/5c7a…/result.json",
   "stats": { "items": 18, "pages": 2, "durationMs": 41230 } }
 ```
 
@@ -76,7 +76,7 @@ Only a **production** run that finished in time, was not stale, and passed the c
 
 ## Result layout
 
-`customers/{customerId}/catalogs/{catalogId}/sites/{siteId}/runs/{runId}/result.json`, expiring after 30 days:
+`runs/{customerId}/{catalogId}/{siteId}/{runId}/result.json`, expiring after 30 days (one lifecycle rule on the `runs/` prefix; specs live under `customers/` and never expire):
 
 ```json
 { "runId": "…", "mode": "production", "finished": true, "pages": 2, "skipped": 0,
@@ -86,3 +86,16 @@ Only a **production** run that finished in time, was not stale, and passed the c
 ```
 
 A value that fails its transforms is absent from `value` and appears in `issues` with the raw text. Items without a name or link are dropped and counted in `skipped`.
+
+## Runtime: Lambda first, Fargate as the fallback
+
+The worker is built once (`Dockerfile.worker`) and runs unchanged on either runtime.
+
+**Lambda (default).** The image is a Lambda container function (outside any VPC, 2 GB, 900 s) fed by the scrape queue with batch size 1 and a capped event-source concurrency (`maxConcurrentScrapes`, default 5). The queue's visibility timeout is 6x the function timeout. The handler is `dist/scrape/worker/lambda-handler.handler`; `dist/scrape/worker/smoke-handler.handler` loads a trivial page and is what to invoke after a deploy.
+
+**Switch criterion.** Move a site to Fargate when its measured p95 run time exceeds about 10 minutes (it would otherwise run into the 900 s limit and fail with `timeout`).
+
+**Moving to Fargate.**
+1. Run the same image as an ECS service on Fargate with the command `node dist/scrape/worker/fargate-main.js` (override the Lambda entrypoint) and the environment `SCRAPE_QUEUE_URL`, `RESULTS_QUEUE_URL`, `RESULTS_BUCKET` and `MAX_RUN_MS` (the longest a scrape may run; default 1 hour). The task role needs the same permissions as the Lambda role (see `infra/lib/scrape-stack.ts`) plus `sqs:ReceiveMessage`, `sqs:DeleteMessage` and `sqs:ChangeMessageVisibility` on the scrape queue.
+2. The loop long-polls the scrape queue, extends the message's visibility every 60 seconds while a scrape runs (so the FIFO message group stays locked and the message is not redelivered), and deletes the message when the scrape finishes. A crash leaves the message to be redelivered; after 3 receives it goes to the dead-letter queue, exactly as on Lambda.
+3. Remove the Lambda event source mapping so both runtimes do not consume the same queue. Sites share one queue, so the switch applies to all sites at once; if only some sites need it, give them a second queue and select it when the request is enqueued.

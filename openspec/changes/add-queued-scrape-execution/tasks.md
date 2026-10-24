@@ -32,10 +32,10 @@
 
 ## 5. Infrastructure (AWS)
 
-- [ ] 5.1 Define the FIFO scrape queue (group by site, dedup by site for production and by site and spec version for preview), its DLQ with `maxReceiveCount: 3`, the results queue, a visibility timeout at least 6x the function timeout, and the S3 bucket (versioned, with the 30-day lifecycle rule on raw results); verify the IaC plan or synth shows these settings
+- [x] 5.1 Define the FIFO scrape queue (group by site, dedup by site for production and by site and spec version for preview), its DLQ with `maxReceiveCount: 3`, the results queue, a visibility timeout at least 6x the function timeout, and the S3 bucket (versioned, with the 30-day lifecycle rule on raw results); verify the IaC plan or synth shows these settings
 - [ ] 5.2 Build the worker container image with Chromium and define the Lambda outside the VPC with capped event-source concurrency, about 2 GB memory and a 900 s timeout; verify the image runs a trivial Puppeteer page load on Lambda
-- [ ] 5.3 Add IAM roles: worker limited to the bucket prefixes and queues it needs with no database access, API limited to enqueueing, the results queue and the scheduler; verify the worker role cannot reach anything outside its policy
-- [ ] 5.4 Document the Fargate fallback (same image, `RunTask`, visibility heartbeat) and the switch criterion (p95 run time over about 10 minutes) in `docs/`; verify a reviewer can follow it without reading the design
+- [x] 5.3 Add IAM roles: worker limited to the bucket prefixes and queues it needs with no database access, API limited to enqueueing, the results queue and the scheduler; verify the worker role cannot reach anything outside its policy
+- [x] 5.4 Document the Fargate fallback (same image, `RunTask`, visibility heartbeat) and the switch criterion (p95 run time over about 10 minutes) in `docs/`; verify a reviewer can follow it without reading the design
 
 ## 6. Integration
 

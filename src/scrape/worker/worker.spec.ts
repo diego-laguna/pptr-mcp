@@ -56,9 +56,7 @@ describe('ScrapeWorker', () => {
     ) as RunResult;
     expect(stored.items).toHaveLength(5000);
     expect(JSON.stringify(stored).length).toBeGreaterThan(256 * 1024);
-    expect(out.resultKey).toBe(
-      'customers/c1/catalogs/k1/sites/s1/runs/r1/result.json',
-    );
+    expect(out.resultKey).toBe('runs/c1/k1/s1/r1/result.json');
     expect(stored.items[0].value.launch).toBe('2026-10-15');
   });
 
