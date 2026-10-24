@@ -14,15 +14,15 @@ Goals:
 
 ## Target Sites
 
-Each site gets its own generated extraction script — page structures differ enough that selectors won't transfer between sites.
+Each site gets its own generated extraction script — page structures differ enough that selectors won't transfer between sites. Each site is scraped under its catalog's schema (see Persistence Layer), which defines which product attributes it collects; the five below are the first development customer's clothing/footwear catalog, in Argentina, priced in ARS.
 
-| # | Site | URL |
-| --- | --- | --- |
-| 1 | Grisino | https://www.grisino.com/ |
-| 2 | Cheeky | https://www.cheeky.com.ar/ |
-| 3 | Naranjo | https://www.naranjo.com.ar/ |
-| 4 | Mimo | https://www.mimo.com.ar/ |
-| 5 | Baby Cottons | https://www.babycottons.com.ar/ |
+| # | Site | URL | Country | Currency |
+| --- | --- | --- | --- | --- |
+| 1 | Grisino | https://www.grisino.com/ | AR | ARS |
+| 2 | Cheeky | https://www.cheeky.com.ar/ | AR | ARS |
+| 3 | Naranjo | https://www.naranjo.com.ar/ | AR | ARS |
+| 4 | Mimo | https://www.mimo.com.ar/ | AR | ARS |
+| 5 | Baby Cottons | https://www.babycottons.com.ar/ | AR | ARS |
 
 ## Output Data Model
 
@@ -44,53 +44,62 @@ Each catalog entry:
   "link": "string (absolute URL)",
   "price": "string",
   "thumbnail_url": "string (absolute URL)",
-  "gender": "string (e.g. \"girls\", \"boys\", \"unisex\")",
-  "size": "string (e.g. \"10\", \"S\", \"3-6m\")",
-  "type": "string (e.g. \"t-shirt\", \"pants\", \"dress\")",
+  "attributes": "object — per the catalog's schema, see Persistence Layer",
   "updated": "string (ISO 8601 timestamp)"
 }
 ```
 
 - `price` stays a string, as displayed on the site (currency symbol, formatting) — normalization is a later concern.
 - Envelope `updated` is when this scrape run completed; item `updated` is when that item was last confirmed present, so staleness can be tracked per item across runs.
-- `gender`, `size`, and `type` aren't always on the catalog/listing page — a site's script may need to read them from the breadcrumb/category path, the product detail page, or the item name. A field the script can't determine with confidence is left out rather than guessed.
-- A product offered in multiple sizes becomes multiple catalog entries — same `name`/`link`/`thumbnail_url`/`gender`/`type`, one entry per `size` (with that size's own `price`), matching the `products` + `product_sizes` split in Persistence Layer.
+- `attributes` holds whatever properties the catalog's schema defines (see Persistence Layer) — a clothing catalog might define `gender`, `size`, `type`, `unit_system`; a cosmetics catalog `color`, `ingredients`; a car-parts catalog `type`, `manufacturer`, `warranty_duration`. A field the script can't determine with confidence is left out rather than guessed.
+- A product with multiple variants (e.g. several clothing sizes) becomes multiple catalog entries — same `name`/`link`/`thumbnail_url` and non-variant attributes, one entry per variant value (with that variant's own `price`), matching the `products` + `product_variants` split in Persistence Layer.
 
 ## Persistence Layer
 
-PostgreSQL, confirmed. Schema splits identity from pricing so sizes are tracked independently of the product itself:
+PostgreSQL (RDS on AWS), accessed with `pg` and plain SQL migrations (`node-pg-migrate`, no ORM). Full detail, including the schema-change operations and how to run migrations and the dev seed, is in [persistence.md](persistence.md). The service is multi-tenant: customers are external, each owns many private catalogs, and every read and write is scoped to a customer.
 
-- `products` — one row per catalog item as identified by the site (e.g. by `link`): `id`, `site_id`, `name`, `link`, `thumbnail_url`, `gender`, `type`, `updated`. Deleted outright once a scrape no longer finds it — no history kept at the product level. Indexes on `gender`, `type`, `site_id`, and a text-search index on `name`.
-- `product_sizes` — one row per size a product is offered in: `id`, `product_id` (FK → `products.id`, `ON DELETE CASCADE`), `size`, `price`, `available` (boolean), `updated`. A size not found in a scrape is kept and flipped to `available = false` rather than deleted, so the frontend can show it as out of stock. Index on `(product_id, size)`, and on `size` alone for filtering across products.
+- `customers` — `id`, `name`. Identity and logins arrive with the accounts work.
+- `catalogs` — one per customer's catalog: `id`, `customer_id`, `name` (unique per customer), `schema_version` (the current version).
+- `catalog_schema_versions` — the catalog's schema, one immutable row per version: `properties` (JSONB list of typed, described properties), `variant_property` (which property, if any, splits a product into separately priced rows — `size` for clothing, none for car parts), and `changes` (the operations that produced the version). Property types: string, number, boolean, url, date (ISO `YYYY-MM-DD`), enum, string list; at most 50 properties.
+- `sites` — belong to a catalog and are scraped under its schema: `id`, `catalog_id`, `url` (unique per catalog), `name`, `country` (ISO 3166-1 alpha-2), `currency` (ISO 4217).
+- `site_attention` — markers telling a customer a site needs follow-up (for example `property_pending` after a property is added); cleared markers are kept as history.
+- `products` — one row per catalog item as identified by the site (by `link`): `id`, `site_id`, `name`, `link`, `thumbnail_url`, `attributes` (JSONB, the schema's non-variant properties), `updated_at`, plus `price`/`available` directly on this row when the schema has no variant property. Deleted outright once a scrape no longer finds it. Indexes: GIN on `attributes`, text search on `name`, and `(site_id, link)` unique.
+- `product_variants` — one row per variant value when the schema has a variant property: `id`, `product_id` (FK → `products.id`, `ON DELETE CASCADE`), `variant_value`, `price`, `available`, `updated_at`; unique on `(product_id, variant_value)`. A variant not found in a scrape is kept and flipped to `available = false` rather than deleted.
 
-A query like "t-shirts for girls, size 10" filters `products` on `gender`/`type` and joins `product_sizes` on `size`.
+The customer defines the schema; it is not chosen from a fixed list of templates. Schemas evolve through explicit operations (add, rename, remove, edit a description, add or remove an enum value). Adding a property creates a new version and marks the catalog's sites `property_pending` so a follow-up discovery can find it; renaming or removing a property migrates stored attributes with no discovery; changing a property's type is rejected (remove and add instead). Product writes declare the schema version they were produced under and are rejected as stale if the catalog has moved on.
+
+Values are stored in canonical typed form; converting site text (for example a date shown as `15/10/2026`) happens upstream in the scrape run, whose raw and typed values are kept in object storage rather than in PostgreSQL. `price` stays text, exactly as shown on the site.
+
+A query like "t-shirts for girls, size 10" filters `products` on `attributes @> '{"gender":"girls","type":"t-shirt"}'` and joins `product_variants` on `variant_value = '10'`; a car-parts catalog without a variant property only touches `products.attributes`.
 
 Each refresh reconciles against what's stored, rather than overwriting it, at both levels:
 
-- New product in the scrape, not in the store → insert into `products`, with its sizes into `product_sizes` (`available = true`).
-- Stored product missing from the new scrape → delete the `products` row (cascades to its `product_sizes` rows) — nothing kept.
-- Product present in both, but a size no longer offered → keep the `product_sizes` row and set `available = false`, rather than deleting it.
-- A size present in both → update its `price` and `updated`, and set `available = true` if it had been marked unavailable.
+- New product in the scrape, not in the store → insert into `products` (with `attributes`, and `price`/`available` if the schema has no variant property), with any variants into `product_variants` (`available = true`).
+- Stored product missing from the new scrape → delete the `products` row (cascades to its `product_variants` rows) — nothing kept.
+- Product present in both, but a variant no longer offered → keep the `product_variants` row and set `available = false`, rather than deleting it.
+- A variant present in both → update its `price` and `updated_at`, and set `available = true` if it had been marked unavailable.
 
-That reconciliation is what lets the query endpoint and the frontend show a size as out of stock instead of silently hiding it, and still gives per-size price history for as long as the product itself is listed.
+That reconciliation is what lets the query endpoint and the frontend show a variant as out of stock instead of silently hiding it, and still gives per-variant price history for as long as the product itself is listed.
 
 ## Frontend Requirements
 
 - Site selection (optional): scope results to one target site, or search across all of them.
-- Filter/search: narrow the catalog by `gender`, `size`, and `type` (e.g. "t-shirts for girls, size 10"), or by free-text name.
-- Availability: a size that's out of stock still shows (e.g. grayed out / labeled "not available") instead of disappearing from the results.
+- Filter/search: narrow the catalog by the properties the selected catalog's schema marks filterable (e.g. `gender`/`size`/`type` for clothing, `color`/`ingredients` for cosmetics), or by free-text name.
+- Availability: a variant that's out of stock still shows (e.g. grayed out / labeled "not available") instead of disappearing from the results.
 - Catalog retrieval: request the latest stored catalog, filtered or not.
 - Download: download the returned catalog array as a JSON file.
 
 ## Backend API Requirements
 
+All data is scoped to a customer: a request only ever sees that customer's catalogs, sites and products, and another customer's ids behave as if they do not exist. Authentication and the customer-facing scoping rules arrive with the accounts work.
+
 | # | Endpoint | Audience | Purpose |
 | --- | --- | --- | --- |
-| 1 | `GET /api/sites` | User-facing | List the available target sites (id, name, URL) |
-| 2 | `GET /api/catalog` | User-facing | Query the stored catalog, filtered by `siteId`, `gender`, `size`, `type`, and/or free-text `q`; omitting `siteId` searches across all sites. Each result includes whether that size is currently available. |
+| 1 | `GET /api/sites` | User-facing | List the customer's sites for a catalog (id, name, URL, country, currency) |
+| 2 | `GET /api/catalog` | User-facing | Query the stored products of one of the customer's catalogs, filtered by `siteId`, free-text `q`, and the catalog schema's properties (e.g. `gender`/`size`/`type` for clothing); omitting `siteId` searches across all of that catalog's sites. Each result includes whether that variant is currently available. |
 | 3 | `POST /internal/sites/{siteId}/refresh` | Internal only | Re-run that site's generated (non-AI) script and reconcile the persisted catalog; called by the scheduler app |
 
-The internal endpoint isn't exposed to end users — it needs its own access control (e.g. network restriction or a service credential), separate from the user-facing endpoints. A cross-site result from the query endpoint includes which site each item came from (its stored `site_id`), since a filtered query can span every target site.
+The internal endpoint isn't exposed to end users — it needs its own access control (e.g. network restriction or a service credential), separate from the user-facing endpoints. A cross-site result from the query endpoint includes which site each item came from (its stored `site_id`), since a filtered query can span every site of a catalog.
 
 ## Architecture
 
@@ -115,14 +124,15 @@ Scheduler (cron) → Internal endpoint ─┐                                   
                        (list sites · get catalog · download)
 ```
 
-Discovery (top) runs once per site, or again later if a script starts failing: Claude, via the Agent SDK, drives a real browser through the Puppeteer MCP server to load the target site, locate the catalog listing, and work out the selectors and navigation/click sequence needed to reach every item. That analysis is written out as a standalone script and saved to the repo (one script per site).
+Discovery (top) runs once per site, or again later if a script starts failing: Claude, via the Agent SDK, drives a real browser through the Puppeteer MCP server to load the target site, locate the catalog listing, and work out the selectors and navigation/click sequence needed to reach every item and its attributes per the site's metadata template. That analysis is written out as a standalone script and saved to the repo (one script per site).
 
 Execution (bottom) is what the scheduler triggers on a recurring basis: it calls the internal refresh endpoint, which runs that site's generated script directly with Puppeteer — no MCP, no LLM call — maps the results into the catalog JSON shape, and persists them. If that run fails, it publishes a `failed_scrape` event to an SQS queue; a discovery service consumes it with up to 2 concurrent workers, retrying transient failures, with a redrive policy (`maxReceiveCount: 3`) routing a selector that keeps failing to a dead-letter queue instead of re-running discovery on every scrape. The user-facing endpoints then serve whatever was last persisted.
 
 ## Open Items / Next Steps
 
-- [ ] Decide how `gender`/`size`/`type` are derived per site (breadcrumb, product detail page, or name parsing) — likely custom per site
-- [ ] Free-text search strategy across sites (Spanish text: accents, plurals, synonyms like "remera" / "camiseta" / "t-shirt")
+- [ ] Decide how each schema property is derived per site (breadcrumb, product detail page, or name parsing) — likely custom per site
+- [ ] Free-text search strategy across sites (language follows a site's country — not just Spanish/English)
+- [ ] Cross-country comparability: a clothing query spanning countries mixes sizing systems unless scoped by `unit_system` or country
 - [ ] Scheduler cadence per site (fixed interval vs. per-site config)
 - [ ] Access control for the internal refresh endpoint
 

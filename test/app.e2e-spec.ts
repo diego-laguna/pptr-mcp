@@ -11,6 +11,8 @@ describe('AppController (e2e)', () => {
   let app: NestFastifyApplication;
 
   beforeEach(async () => {
+    // The pool connects lazily, so a placeholder URL is enough for this test.
+    process.env.DATABASE_URL ??= 'postgres://placeholder@localhost:5432/none';
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],
     }).compile();
