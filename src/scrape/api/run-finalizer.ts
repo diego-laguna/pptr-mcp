@@ -135,6 +135,7 @@ export class RunFinalizer {
               `${k} parsed for ${Math.round(r * 100)}% of present values`,
           )
           .join('; '),
+        failingProperties: weak.map(([k]) => k),
       });
 
     await this.deps.reconciler.reconcile({
@@ -163,6 +164,7 @@ export class RunFinalizer {
       itemCount?: number;
       pageCount?: number;
       resultKey?: string;
+      failingProperties?: string[];
       stats?: { items: number; pages: number };
     },
   ) {
@@ -172,6 +174,7 @@ export class RunFinalizer {
       itemCount: info.itemCount ?? info.stats?.items,
       pageCount: info.pageCount ?? info.stats?.pages,
       resultKey: info.resultKey,
+      failingProperties: info.failingProperties,
     });
     if (run.mode === 'production') {
       await this.deps.failures.publish({

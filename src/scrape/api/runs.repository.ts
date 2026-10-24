@@ -116,12 +116,14 @@ export class RunsRepository {
       itemCount?: number;
       pageCount?: number;
       resultKey?: string;
+      /** Properties whose values failed to parse, the default targets of a repair. */
+      failingProperties?: string[];
     },
   ): Promise<void> {
     await this.pool.query(
       `UPDATE scrape_runs
           SET status = 'failed', reason = $2, detail = $3, item_count = $4, page_count = $5,
-              result_key = $6, finished_at = now()
+              result_key = $6, failing_properties = $7, finished_at = now()
         WHERE id = $1 AND status IN ('queued', 'running')`,
       [
         runId,
@@ -130,6 +132,7 @@ export class RunsRepository {
         outcome.itemCount ?? null,
         outcome.pageCount ?? null,
         outcome.resultKey ?? null,
+        outcome.failingProperties ?? [],
       ],
     );
   }

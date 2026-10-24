@@ -2,11 +2,11 @@
 
 ## 1. Attempts, versions and URL safety
 
-- [ ] 1.1 Add the migration for `discovery_attempts` (mode, targeted properties, pinned schema version and snapshot, status, reason, spec version, usage, timestamps) with a partial unique index for one queued or running attempt per site, and `site_spec_versions` (unique `(site_id, version)`); verify integration tests refuse a second pending attempt and a duplicate version
-- [ ] 1.2 Implement the site URL safety check (scheme, no credentials, all resolved addresses public, loopback, private, link-local including `169.254.169.254` and reserved ranges rejected); verify unit tests cover each scenario in the discovery-requests spec including IPv6 and hostnames that resolve to private addresses
-- [ ] 1.3 Implement the request endpoint `POST /internal/sites/{siteId}/discoveries` (full, incremental and repair, guidance limit, `404`, `409 no_base_spec`, `422`, duplicate returns the existing attempt, `202` with `attemptId`); verify e2e tests for each case
-- [ ] 1.4 Implement the incremental and repair target resolution (incremental: default to all unbound properties, reject already-bound ones; repair: only bound properties, default to those the latest scrape reported failing, `422` when none, `409 no_base_spec` without an active spec) and the schema snapshot capture; verify unit tests including a description edited after the request not affecting the snapshot
-- [ ] 1.5 Add the `AdmissionPolicy` port with an allow-all default and the `429 budget_exhausted` rejection path; verify tests for a refusing policy and the default
+- [x] 1.1 Add the migration for `discovery_attempts` (mode, targeted properties, pinned schema version and snapshot, status, reason, spec version, usage, timestamps) with a partial unique index for one queued or running attempt per site, and `site_spec_versions` (unique `(site_id, version)`); verify integration tests refuse a second pending attempt and a duplicate version
+- [x] 1.2 Implement the site URL safety check (scheme, no credentials, all resolved addresses public, loopback, private, link-local including `169.254.169.254` and reserved ranges rejected); verify unit tests cover each scenario in the discovery-requests spec including IPv6 and hostnames that resolve to private addresses
+- [x] 1.3 Implement the request endpoint `POST /internal/sites/{siteId}/discoveries` (full, incremental and repair, guidance limit, `404`, `409 no_base_spec`, `422`, duplicate returns the existing attempt, `202` with `attemptId`); verify e2e tests for each case
+- [x] 1.4 Implement the incremental and repair target resolution (incremental: default to all unbound properties, reject already-bound ones; repair: only bound properties, default to those the latest scrape reported failing, `422` when none, `409 no_base_spec` without an active spec) and the schema snapshot capture; verify unit tests including a description edited after the request not affecting the snapshot
+- [x] 1.5 Add the `AdmissionPolicy` port with an allow-all default and the `429 budget_exhausted` rejection path; verify tests for a refusing policy and the default
 
 ## 2. Spec tools and verifier (pure and fixture-based)
 
@@ -27,9 +27,9 @@
 
 ## 4. Finalization
 
-- [ ] 4.1 Implement the finished-attempt consumer: check the schema still declares every bound property (`schema_changed` otherwise), assign the next version number in a transaction, conditional-put the immutable spec object, record the version, and update the attempt; verify integration tests including two simultaneous finalizations getting distinct numbers
-- [ ] 4.2 Implement version listing and retrieval scoped to the owning customer (newest first, other customers get "not found"); verify integration tests for both
-- [ ] 4.3 Verify storing a version never changes the active version (interim `active.json` untouched); integration test with version 2 active and version 3 stored
+- [x] 4.1 Implement the finished-attempt consumer: check the schema still declares every bound property (`schema_changed` otherwise), assign the next version number in a transaction, conditional-put the immutable spec object, record the version, and update the attempt; verify integration tests including two simultaneous finalizations getting distinct numbers
+- [x] 4.2 Implement version listing and retrieval scoped to the owning customer (newest first, other customers get "not found"); verify integration tests for both
+- [x] 4.3 Verify storing a version never changes the active version (interim `active.json` untouched); integration test with version 2 active and version 3 stored
 
 ## 5. Infrastructure (AWS)
 
