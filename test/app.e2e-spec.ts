@@ -12,6 +12,13 @@ describe('AppController (e2e)', () => {
 
   beforeEach(async () => {
     // The pool connects lazily, so a placeholder URL is enough for this test.
+    process.env.SCRAPE_QUEUE_URL ??= 'http://localhost/scrape.fifo';
+    process.env.RESULTS_QUEUE_URL ??= 'http://localhost/results';
+    process.env.FAILED_SCRAPE_QUEUE_URL ??= 'http://localhost/failed';
+    process.env.TRIGGER_QUEUE_URL ??= 'http://localhost/trigger';
+    process.env.RESULTS_BUCKET ??= 'placeholder';
+    process.env.INTERNAL_API_TOKEN ??= 'placeholder';
+    process.env.AWS_REGION ??= 'us-east-1';
     process.env.DATABASE_URL ??= 'postgres://placeholder@localhost:5432/none';
     const moduleFixture: TestingModule = await Test.createTestingModule({
       imports: [AppModule],

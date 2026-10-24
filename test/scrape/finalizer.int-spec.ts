@@ -284,7 +284,7 @@ describe('retries and the dead-letter queue', () => {
 
   async function wire(
     execute: () => Promise<
-      never | { finished: boolean; pages: number; rawItems: RawItem[] }
+      { finished: boolean; pages: number; rawItems: RawItem[] }
     >,
   ) {
     const { customer, catalog, site } = await createSite(
