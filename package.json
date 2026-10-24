@@ -14,7 +14,12 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:cov": "vitest run --coverage",
-    "test:e2e": "vitest run --config ./vitest.config.e2e.ts"
+    "test:e2e": "vitest run --config ./vitest.config.e2e.ts",
+    "migrate": "node-pg-migrate -m migrations -j sql",
+    "migrate:up": "node-pg-migrate up -m migrations -j sql",
+    "migrate:down": "node-pg-migrate down -m migrations -j sql",
+    "test:int": "vitest run --config ./vitest.config.integration.ts",
+    "seed:dev": "SEED_DEV_DATA=true node dist/seed/run-seed.js"
   },
   "repository": {
     "type": "git",
@@ -33,6 +38,8 @@
     "@nestjs/common": "^12.0.1",
     "@nestjs/core": "^12.0.1",
     "@nestjs/platform-fastify": "^12.1.2",
+    "node-pg-migrate": "^9.0.0",
+    "pg": "^8.23.1",
     "reflect-metadata": "^0.2.2",
     "rxjs": "^7.8.1"
   },
@@ -41,7 +48,9 @@
     "@nestjs/cli": "^12.0.0",
     "@nestjs/schematics": "^12.0.0",
     "@nestjs/testing": "^12.0.1",
+    "@testcontainers/postgresql": "^12.2.1",
     "@types/node": "^26.6.4",
+    "@types/pg": "^8.23.1",
     "@types/supertest": "^7.0.0",
     "@vitest/coverage-v8": "^4.1.2",
     "oxlint": "^1.58.0",
