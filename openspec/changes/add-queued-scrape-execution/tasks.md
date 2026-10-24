@@ -25,10 +25,10 @@
 
 ## 4. Triggering
 
-- [ ] 4.1 Change `POST /internal/sites/{siteId}/refresh` to resolve the active spec, record a run, enqueue and return `202` with `runId` (`404` unknown site, `409 no_active_spec`, `401/403` without internal credentials); verify e2e tests for each case
-- [ ] 4.2 Add `POST /internal/sites/{siteId}/preview` for a candidate spec version with page and item limits (`404` for unknown version); verify e2e tests, including that the active spec is unchanged
-- [ ] 4.3 Make duplicate requests (production per site, preview per site and spec version) return the existing `runId` without enqueuing, with preview allowed during a production run and a preview of a different version getting its own run; verify tests issuing repeated requests
-- [ ] 4.4 Implement the schedule manager (create, update, delete one EventBridge Scheduler schedule per site producing the same message as the endpoint); verify unit tests compare the scheduled and endpoint payloads and that deletion stops further requests
+- [x] 4.1 Change `POST /internal/sites/{siteId}/refresh` to resolve the active spec, record a run, enqueue and return `202` with `runId` (`404` unknown site, `409 no_active_spec`, `401/403` without internal credentials); verify e2e tests for each case
+- [x] 4.2 Add `POST /internal/sites/{siteId}/preview` for a candidate spec version with page and item limits (`404` for unknown version); verify e2e tests, including that the active spec is unchanged
+- [x] 4.3 Make duplicate requests (production per site, preview per site and spec version) return the existing `runId` without enqueuing, with preview allowed during a production run and a preview of a different version getting its own run; verify tests issuing repeated requests
+- [x] 4.4 Implement the schedule manager (create, update, delete one EventBridge Scheduler schedule per site producing the same message as the endpoint); verify unit tests compare the scheduled and endpoint payloads and that deletion stops further requests
 
 ## 5. Infrastructure (AWS)
 

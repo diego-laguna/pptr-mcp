@@ -145,6 +145,37 @@ export class RunsRepository {
     return rows.length === 0 ? null : (rows[0].item_count as number);
   }
 
+  /** Ownership and pinned schema for a site, for internal request handling. */
+  async siteContext(siteId: string): Promise<{
+    siteId: string;
+    customerId: string;
+    catalogId: string;
+    schemaVersion: number;
+    schema: { properties: string[]; variantProperty: string | null };
+  } | null> {
+    const { rows } = await this.pool.query(
+      `SELECT s.id, c.customer_id, c.id AS catalog_id, c.schema_version,
+              v.properties, v.variant_property
+         FROM sites s JOIN catalogs c ON c.id = s.catalog_id
+         JOIN catalog_schema_versions v ON v.catalog_id = c.id AND v.version = c.schema_version
+        WHERE s.id = $1`,
+      [siteId],
+    );
+    if (rows.length === 0) return null;
+    const row = rows[0];
+    const properties = row.properties as { name: string }[];
+    return {
+      siteId: row.id,
+      customerId: row.customer_id,
+      catalogId: row.catalog_id,
+      schemaVersion: row.schema_version,
+      schema: {
+        properties: properties.map((p) => p.name),
+        variantProperty: row.variant_property ?? null,
+      },
+    };
+  }
+
   /** Current schema version of the catalog that owns the site. */
   async currentSchemaVersion(siteId: string): Promise<number | null> {
     const { rows } = await this.pool.query(
