@@ -28,6 +28,18 @@ describe('transforms', () => {
     });
   });
 
+  it('does not read a number out of surrounding words', () => {
+    expect(
+      applyTransforms('Remera 1', [{ type: 'number', locale: 'es-AR' }]),
+    ).toMatchObject({ ok: false });
+    expect(
+      applyTransforms('ARS 12.990,00', [{ type: 'number', locale: 'es-AR' }]),
+    ).toEqual({ ok: true, value: 12990 });
+    expect(
+      applyTransforms('-1.500,25', [{ type: 'number', locale: 'es-AR' }]),
+    ).toEqual({ ok: true, value: -1500.25 });
+  });
+
   it('fails a number that is not one', () => {
     expect(
       applyTransforms('agotado', [{ type: 'number', locale: 'es-AR' }]),

@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { NotFoundError } from '../../catalog/errors.js';
 import { ActiveSpecResolver } from '../../scrape/api/active-spec.js';
 import { SpecStore } from '../../scrape/spec/spec-store.js';

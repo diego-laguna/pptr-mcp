@@ -79,9 +79,15 @@ function parseNumber(input: string, locale: string): TransformResult {
   } catch {
     return fail(`unsupported locale "${locale}"`);
   }
-  // Keep digits, a sign and the two separators; currency symbols and spaces fall away.
-  const kept = input.replace(/[^\d.,'  \s-]/g, '');
-  const sign = /^\s*[^\d]*-/.test(input) ? -1 : 1;
+  // Currency symbols and codes fall away; any other letter means this is not a number.
+  const stripped = input.replace(
+    /US\$|U\$S|\b(?:ARS|USD|EUR|BRL|CLP|UYU)\b|[$€£¥]/gi,
+    '',
+  );
+  if (/[a-z]/i.test(stripped))
+    return fail(`"${input}" is not a number in ${locale}`);
+  const kept = stripped.replace(/[^\d.,'\u00a0\u202f\s-]/g, '');
+  const sign = /^\s*-/.test(stripped) ? -1 : 1;
   const group = separators.group.replace(/[  ]/, ' ');
   let text = kept.replace(/[  ]/g, ' ').replace(/-/g, '');
   text = text.split(group).join('').replace(/\s/g, '');
