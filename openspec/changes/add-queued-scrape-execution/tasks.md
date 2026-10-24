@@ -40,4 +40,4 @@
 ## 6. Integration
 
 - [ ] 6.1 Write a selector spec by hand for each of the five dev sites, smoke-test them from the deployed runtime and record success, run time, parse rates and any blocking; verify results are written down and decide whether any site needs Fargate
-- [ ] 6.2 End-to-end check: trigger a refresh, observe the worker run, the S3 result with raw and typed values and the reconciliation input; verify a forced timeout fails the run, deletes nothing and publishes `failed_scrape`, and a preview leaves the catalog unchanged
+- [x] 6.2 End-to-end check: trigger a refresh, observe the worker run, the S3 result with raw and typed values and the reconciliation input; verify a forced timeout fails the run, deletes nothing and publishes `failed_scrape`, and a preview leaves the catalog unchanged

@@ -97,7 +97,7 @@ All data is scoped to a customer: a request only ever sees that customer's catal
 | --- | --- | --- | --- |
 | 1 | `GET /api/sites` | User-facing | List the customer's sites for a catalog (id, name, URL, country, currency) |
 | 2 | `GET /api/catalog` | User-facing | Query the stored products of one of the customer's catalogs, filtered by `siteId`, free-text `q`, and the catalog schema's properties (e.g. `gender`/`size`/`type` for clothing); omitting `siteId` searches across all of that catalog's sites. Each result includes whether that variant is currently available. |
-| 3 | `POST /internal/sites/{siteId}/refresh` | Internal only | Re-run that site's generated (non-AI) script and reconcile the persisted catalog; called by the scheduler app |
+| 3 | `POST /internal/sites/{siteId}/refresh` | Internal only | Enqueue a scrape of the site's active selector spec and answer `202` with a `runId`; the queued, non-AI run reconciles the persisted catalog only if it is complete. A sibling `POST /internal/sites/{siteId}/preview` runs a candidate spec without persisting. See [scrape-execution.md](scrape-execution.md) |
 
 The internal endpoint isn't exposed to end users — it needs its own access control (e.g. network restriction or a service credential), separate from the user-facing endpoints. A cross-site result from the query endpoint includes which site each item came from (its stored `site_id`), since a filtered query can span every site of a catalog.
 
@@ -126,7 +126,7 @@ Scheduler (cron) → Internal endpoint ─┐                                   
 
 Discovery (top) runs once per site, or again later if a script starts failing: Claude, via the Agent SDK, drives a real browser through the Puppeteer MCP server to load the target site, locate the catalog listing, and work out the selectors and navigation/click sequence needed to reach every item and its attributes per the site's metadata template. That analysis is written out as a standalone script and saved to the repo (one script per site).
 
-Execution (bottom) is what the scheduler triggers on a recurring basis: it calls the internal refresh endpoint, which runs that site's generated script directly with Puppeteer — no MCP, no LLM call — maps the results into the catalog JSON shape, and persists them. If that run fails, it publishes a `failed_scrape` event to an SQS queue; a discovery service consumes it with up to 2 concurrent workers, retrying transient failures, with a redrive policy (`maxReceiveCount: 3`) routing a selector that keeps failing to a dead-letter queue instead of re-running discovery on every scrape. The user-facing endpoints then serve whatever was last persisted.
+Execution (bottom) is what the scheduler triggers on a recurring basis: its per-site schedule (or the internal refresh endpoint) enqueues a scrape on an SQS FIFO queue; a stateless worker runs that site's declarative selector spec with Puppeteer — no MCP, no LLM call — and stores raw and typed values, and the API reconciles the persisted catalog only when the run is complete (see [scrape-execution.md](scrape-execution.md)). If a production run fails, it publishes a `failed_scrape` event to an SQS queue for later consumers; transient failures are redelivered, with a redrive policy (`maxReceiveCount: 3`) routing a request that keeps failing to a dead-letter queue. The user-facing endpoints then serve whatever was last persisted.
 
 ## Open Items / Next Steps
 
