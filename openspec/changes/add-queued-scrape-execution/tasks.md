@@ -18,10 +18,10 @@
 ## 3. Worker, results and run records
 
 - [x] 3.1 Implement the worker entrypoint (read message, load spec, run, write result to S3 under the owner prefix, send finished-run message, no database access); verify with fake S3 and queues that a large result is passed by reference and the worker makes no database call
-- [ ] 3.2 Add the `scrape_runs` migration (mode, site, spec version, schema version, status, reason, counts, timestamps) with partial unique indexes for queued or running runs (production: one per site; preview: one per site and spec version); verify tests show a second pending production run for a site is refused, a second preview of the same version is refused, and a preview of another version or a production run alongside a preview is allowed
-- [ ] 3.3 Implement the results consumer and run finalizer in the API: apply the count-deviation and per-property parse-rate checks against the previous complete run, fail stale schema versions, hand typed values to reconciliation, and update the run record; verify tests for complete, `count_anomaly`, `parse_anomaly`, first run and `stale_schema`
-- [ ] 3.4 Publish `failed_scrape` events for failed production runs only, with deterministic failures not retried and transient failures redelivered up to 3 times before the DLQ; verify tests for a preview failure (no event), a `timeout` run (event, no reconciliation, stored products untouched) and a repeated transient failure
-- [ ] 3.5 Document the message contract, run states, failure reasons, completeness rules and result layout in `docs/`; verify the documented example message passes the validator from 1.2
+- [x] 3.2 Add the `scrape_runs` migration (mode, site, spec version, schema version, status, reason, counts, timestamps) with partial unique indexes for queued or running runs (production: one per site; preview: one per site and spec version); verify tests show a second pending production run for a site is refused, a second preview of the same version is refused, and a preview of another version or a production run alongside a preview is allowed
+- [x] 3.3 Implement the results consumer and run finalizer in the API: apply the count-deviation and per-property parse-rate checks against the previous complete run, fail stale schema versions, hand typed values to reconciliation, and update the run record; verify tests for complete, `count_anomaly`, `parse_anomaly`, first run and `stale_schema`
+- [x] 3.4 Publish `failed_scrape` events for failed production runs only, with deterministic failures not retried and transient failures redelivered up to 3 times before the DLQ; verify tests for a preview failure (no event), a `timeout` run (event, no reconciliation, stored products untouched) and a repeated transient failure
+- [x] 3.5 Document the message contract, run states, failure reasons, completeness rules and result layout in `docs/`; verify the documented example message passes the validator from 1.2
 
 ## 4. Triggering
 

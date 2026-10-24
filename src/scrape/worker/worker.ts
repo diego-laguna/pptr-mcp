@@ -52,6 +52,8 @@ export class ScrapeWorker {
     ) =>
       this.report({ runId: message.runId, outcome: 'failed', reason, detail });
 
+    await this.report({ runId: message.runId, outcome: 'started' });
+
     let spec: SelectorSpec;
     try {
       spec = await this.deps.specs.load(message.specKey);
