@@ -55,6 +55,8 @@ export interface DiscoveryRequest {
   mode: DiscoveryMode;
   properties?: string[];
   guidance?: string;
+  /** Extend this stored version instead of the active or newest one (incremental only). */
+  baseVersion?: number;
 }
 
 export interface DiscoveryDeps {
@@ -100,6 +102,7 @@ export class DiscoveryRequestService {
       request.mode,
       site.customerId,
       site.siteId,
+      request.baseVersion,
     );
     let targets: string[];
     try {
@@ -174,8 +177,26 @@ export class DiscoveryRequestService {
     mode: DiscoveryMode,
     customerId: string,
     siteId: string,
+    explicit?: number,
   ): Promise<{ baseVersion: number | null; base: SelectorSpec | null }> {
     if (mode === 'full') return { baseVersion: null, base: null };
+    if (explicit !== undefined) {
+      if (mode !== 'incremental')
+        throw new InvalidDiscoveryRequestError(
+          'a base version can only be named for an incremental discovery',
+        );
+      const known = await this.deps.versions
+        .get(customerId, siteId, explicit)
+        .catch(() => null);
+      if (!known)
+        throw new InvalidDiscoveryRequestError(
+          `version ${explicit} does not exist for the site`,
+        );
+      return {
+        baseVersion: explicit,
+        base: await this.deps.specs.load(specKey(customerId, siteId, explicit)),
+      };
+    }
     const active = await this.deps.active.resolve(customerId, siteId);
     const baseVersion =
       mode === 'repair'

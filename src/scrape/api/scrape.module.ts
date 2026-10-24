@@ -13,7 +13,7 @@ import pg from 'pg';
 import { PG_POOL } from '../../database/database.module.js';
 import { SpecStore } from '../spec/spec-store.js';
 import { ObjectStore, S3ObjectStore } from '../storage/object-store.js';
-import { PointerActiveSpecResolver } from './active-spec.js';
+import { DbActiveSpecResolver } from '../../activation/db-active-spec.js';
 import { InternalAuthGuard } from './internal-auth.guard.js';
 import { InternalScrapeController } from './internal-scrape.controller.js';
 import { RunFinalizer } from './run-finalizer.js';
@@ -88,8 +88,8 @@ const providers: Provider[] = [
   },
   {
     provide: ACTIVE_SPEC_RESOLVER,
-    inject: [OBJECT_STORE],
-    useFactory: (o: ObjectStore) => new PointerActiveSpecResolver(o),
+    inject: [PG_POOL],
+    useFactory: (pool: pg.Pool) => new DbActiveSpecResolver(pool),
   },
   {
     provide: SCRAPE_QUEUE,

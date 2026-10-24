@@ -9,14 +9,15 @@ import { DiscoveryMessage } from '../../src/discovery/api/types.js';
 import { RunFinalizer } from '../../src/scrape/api/run-finalizer.js';
 import { RunsRepository } from '../../src/scrape/api/runs.repository.js';
 import { ScrapeRequestService } from '../../src/scrape/api/scrape-request.service.js';
-import { PointerActiveSpecResolver } from '../../src/scrape/api/active-spec.js';
+import { DbActiveSpecResolver } from '../../src/activation/db-active-spec.js';
+import { getActive, setActive } from '../support/active.js';
 import { RunResult } from '../../src/scrape/contracts/messages.js';
 import {
   FixtureServer,
   startFixtureServer,
 } from '../../src/scrape/runner/fixture-server.js';
 import { runWithBrowser } from '../../src/scrape/runner/runner.js';
-import { activePointerKey, specKey } from '../../src/scrape/storage/keys.js';
+import { specKey } from '../../src/scrape/storage/keys.js';
 import { InMemoryScrapeQueue } from '../../src/scrape/testing/in-memory-queue.js';
 import { ScrapeWorker } from '../../src/scrape/worker/worker.js';
 import { createSite } from '../scrape/support.js';
@@ -176,15 +177,10 @@ describe.skipIf(!existsSync(chrome))(
         usage: { turns: 5 },
       });
 
-      await h.objects.put(
-        activePointerKey(customer.id, site.id),
-        '{"version":1}',
-      );
+      await setActive(db.pool, site.id, 1);
       const second = await discover(site.id, { siteId: site.id, mode: 'full' });
       expect((await h.attempts.get(customer.id, second)).specVersion).toBe(2);
-      expect(await h.objects.get(activePointerKey(customer.id, site.id))).toBe(
-        '{"version":1}',
-      ); // untouched
+      expect(await getActive(db.pool, site.id)).toBe(1); // untouched
 
       const attempt = await h.attempts.get(customer.id, first);
       const evidence = JSON.parse((await h.objects.get(attempt.evidenceKey!))!);
@@ -213,7 +209,7 @@ describe.skipIf(!existsSync(chrome))(
       const requests = new ScrapeRequestService(
         runs,
         h.specs,
-        new PointerActiveSpecResolver(h.objects),
+        new DbActiveSpecResolver(db.pool),
         scrapeQueue,
         { previewLimits: { maxPages: 1, maxItems: 5 } },
       );
@@ -310,10 +306,7 @@ describe.skipIf(!existsSync(chrome))(
       );
       // the snapshot of the first attempt must include fabric
       await discover(site.id, { siteId: site.id, mode: 'full' });
-      await h.objects.put(
-        activePointerKey(customer.id, site.id),
-        '{"version":1}',
-      );
+      await setActive(db.pool, site.id, 1);
 
       redesigned = true; // gender and type classes are renamed on the live site
       agent = async (s) => {

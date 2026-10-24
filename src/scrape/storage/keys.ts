@@ -11,11 +11,6 @@ export function specKey(
   return `${sitePrefix(customerId, siteId)}/specs/${version}.json`;
 }
 
-/** Interim pointer to the active spec version, until activation owns it. */
-export function activePointerKey(customerId: string, siteId: string): string {
-  return `${sitePrefix(customerId, siteId)}/specs/active.json`;
-}
-
 export function resultKey(
   customerId: string,
   catalogId: string,

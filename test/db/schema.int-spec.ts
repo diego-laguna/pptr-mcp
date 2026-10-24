@@ -296,7 +296,10 @@ describe('down migration (3.5)', () => {
         'product_variants',
         'products',
         'scrape_runs',
+        'site_activations',
+        'site_active_specs',
         'site_attention',
+        'site_schedules',
         'site_spec_versions',
         'sites',
       ]);

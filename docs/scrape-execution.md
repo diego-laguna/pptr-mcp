@@ -22,7 +22,7 @@ A declarative JSON document, validated against a closed vocabulary (`src/scrape/
 - `variants` (when the schema has a variant property): a locator for the options plus `value`, `price` and `available` bindings. `available` without transforms means "the source is present".
 - `transforms` per binding, applied in order: `trim`, `regex`, `number` (locale), `date` (format and locale, producing `YYYY-MM-DD`; quote literal text in the format, for example `dd 'de' MMMM yyyy`), `enum_map`, `boolean_map`, `split`.
 
-Spec versions are immutable objects at `customers/{customerId}/sites/{siteId}/specs/{version}.json`. Storing a version again with different content is rejected. Until the activation change owns the pointer, the active version is the number in `customers/{customerId}/sites/{siteId}/specs/active.json` (`{"version": 3}`).
+Spec versions are immutable objects at `customers/{customerId}/sites/{siteId}/specs/{version}.json`. Storing a version again with different content is rejected. The active version of a site is recorded in PostgreSQL (`site_active_specs`) and only moves through an activation (see [activation.md](activation.md)); a run keeps the version it was requested with.
 
 ## Scrape message
 

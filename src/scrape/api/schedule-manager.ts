@@ -5,6 +5,7 @@ import {
   SchedulerClient,
   UpdateScheduleCommand,
   ConflictException,
+  ListSchedulesCommand,
 } from '@aws-sdk/client-scheduler';
 import { productionRequest } from './scrape-request.service.js';
 
@@ -29,12 +30,19 @@ export class ScheduleManager {
     private readonly config: ScheduleManagerConfig,
   ) {}
 
-  /** `expression` is an EventBridge Scheduler `rate(...)` or `cron(...)` expression. */
-  async upsert(siteId: string, expression: string): Promise<void> {
+  /** `expression` is an EventBridge Scheduler `rate(...)` or `cron(...)` expression; the timezone is IANA (UTC when omitted). */
+  async upsert(
+    siteId: string,
+    cadence: string | { expression: string; timezone?: string },
+  ): Promise<void> {
+    const expression =
+      typeof cadence === 'string' ? cadence : cadence.expression;
+    const timezone = typeof cadence === 'string' ? undefined : cadence.timezone;
     const params = {
       Name: nameOf(siteId),
       GroupName: this.config.groupName,
       ScheduleExpression: expression,
+      ScheduleExpressionTimezone: timezone ?? 'UTC',
       FlexibleTimeWindow: { Mode: 'OFF' as const },
       State: 'ENABLED' as const,
       Target: {
@@ -63,5 +71,26 @@ export class ScheduleManager {
     } catch (error) {
       if (!(error instanceof ResourceNotFoundException)) throw error;
     }
+  }
+
+  /** Ids of the sites that currently have a schedule in the group. */
+  async listSiteIds(): Promise<string[]> {
+    const ids: string[] = [];
+    let token: string | undefined;
+    do {
+      const out = await this.client.send(
+        new ListSchedulesCommand({
+          GroupName: this.config.groupName,
+          NamePrefix: 'scrape-',
+          NextToken: token,
+        }),
+      );
+      for (const s of out.Schedules ?? []) {
+        if (s.Name?.startsWith('scrape-'))
+          ids.push(s.Name.slice('scrape-'.length));
+      }
+      token = out.NextToken;
+    } while (token);
+    return ids;
   }
 }

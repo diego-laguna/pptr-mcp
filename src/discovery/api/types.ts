@@ -87,6 +87,7 @@ export interface SpecVersionRecord {
   baseVersion: number | null;
   schemaVersion: number;
   boundProperties: string[];
+  discardedAt: Date | null;
   createdAt: Date;
 }
 

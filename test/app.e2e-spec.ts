@@ -19,6 +19,10 @@ describe('AppController (e2e)', () => {
     process.env.DISCOVERY_QUEUE_URL ??= 'http://localhost/discovery';
     process.env.DISCOVERY_FINISHED_QUEUE_URL ??=
       'http://localhost/discovery-finished';
+    process.env.TRIGGER_QUEUE_ARN ??=
+      'arn:aws:sqs:us-east-1:111111111111:trigger';
+    process.env.SCHEDULER_ROLE_ARN ??=
+      'arn:aws:iam::111111111111:role/scheduler';
     process.env.RESULTS_BUCKET ??= 'placeholder';
     process.env.INTERNAL_API_TOKEN ??= 'placeholder';
     process.env.AWS_REGION ??= 'us-east-1';

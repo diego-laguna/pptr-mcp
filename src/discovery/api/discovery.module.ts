@@ -13,6 +13,7 @@ import { PG_POOL } from '../../database/database.module.js';
 import { ActiveSpecResolver } from '../../scrape/api/active-spec.js';
 import { SQS, ScrapeModule } from '../../scrape/api/scrape.module.js';
 import { QueuePoller } from '../../scrape/api/sqs-adapters.js';
+import { ScrapeRequestService } from '../../scrape/api/scrape-request.service.js';
 import {
   ACTIVE_SPEC_RESOLVER,
   OBJECT_STORE,
@@ -99,13 +100,32 @@ const providers: Provider[] = [
   },
   {
     provide: FINALIZER,
-    inject: [PG_POOL, AttemptsRepository, SPEC_STORE, OBJECT_STORE],
+    inject: [
+      PG_POOL,
+      AttemptsRepository,
+      SPEC_STORE,
+      OBJECT_STORE,
+      ScrapeRequestService,
+    ],
     useFactory: (
       pool: pg.Pool,
       attempts: AttemptsRepository,
       specs: SpecStore,
       objects: ObjectStore,
-    ) => new DiscoveryFinalizer({ pool, attempts, specs, objects }),
+      scrapes: ScrapeRequestService,
+    ) =>
+      new DiscoveryFinalizer({
+        pool,
+        attempts,
+        specs,
+        objects,
+        // A stored candidate is previewed right away, so the review is ready when the customer opens it.
+        onVersionStored: ({ siteId, version }) =>
+          scrapes
+            .request({ mode: 'preview', siteId, specVersion: version })
+            .then(() => undefined),
+        logger: new Logger('DiscoveryFinalizer'),
+      }),
   },
 ];
 
@@ -143,6 +163,10 @@ class DiscoveryConsumers
   imports: [ScrapeModule],
   controllers: [InternalDiscoveryController],
   providers: [...providers, DiscoveryConsumers],
-  exports: [SpecVersionsRepository, AttemptsRepository],
+  exports: [
+    SpecVersionsRepository,
+    AttemptsRepository,
+    DiscoveryRequestService,
+  ],
 })
 export class DiscoveryModule {}
