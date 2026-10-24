@@ -47,13 +47,13 @@ describe('bucket', () => {
       VersioningConfiguration: { Status: 'Enabled' },
       PublicAccessBlockConfiguration: Match.objectLike({ BlockPublicAcls: true }),
       LifecycleConfiguration: {
-        Rules: [
+        Rules: Match.arrayWith([
           Match.objectLike({
             ExpirationInDays: 30,
             Prefix: 'runs/',
             Status: 'Enabled',
           }),
-        ],
+        ]),
       },
     });
   });

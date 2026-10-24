@@ -54,6 +54,11 @@ export class DiscoverySession {
 
   constructor(private readonly config: SessionConfig) {}
 
+  /** The spec an incremental or repair attempt starts from. */
+  get baseSpec(): SelectorSpec | null {
+    return this.config.base;
+  }
+
   get maxRounds() {
     return this.config.maxRepairRounds ?? MAX_REPAIR_ROUNDS;
   }
