@@ -10,18 +10,27 @@ import { dirname, join, resolve, sep } from 'node:path';
 export interface ObjectStore {
   get(key: string): Promise<string | null>;
   put(key: string, body: string): Promise<void>;
+  /** Binary objects such as screenshots. */
+  putBinary(key: string, body: Uint8Array, contentType: string): Promise<void>;
   /** Writes only when the key does not exist; returns false if it did. */
   putIfAbsent(key: string, body: string): Promise<boolean>;
 }
 
 export class InMemoryObjectStore implements ObjectStore {
   readonly objects = new Map<string, string>();
+  readonly binaries = new Map<
+    string,
+    { body: Uint8Array; contentType: string }
+  >();
 
   async get(key: string) {
     return this.objects.get(key) ?? null;
   }
   async put(key: string, body: string) {
     this.objects.set(key, body);
+  }
+  async putBinary(key: string, body: Uint8Array, contentType: string) {
+    this.binaries.set(key, { body, contentType });
   }
   async putIfAbsent(key: string, body: string) {
     if (this.objects.has(key)) return false;
@@ -52,6 +61,11 @@ export class LocalFileObjectStore implements ObjectStore {
     }
   }
   async put(key: string, body: string) {
+    const path = this.path(key);
+    await mkdir(dirname(path), { recursive: true });
+    await writeFile(path, body);
+  }
+  async putBinary(key: string, body: Uint8Array) {
     const path = this.path(key);
     await mkdir(dirname(path), { recursive: true });
     await writeFile(path, body);
@@ -93,6 +107,16 @@ export class S3ObjectStore implements ObjectStore {
         Key: key,
         Body: body,
         ContentType: 'application/json',
+      }),
+    );
+  }
+  async putBinary(key: string, body: Uint8Array, contentType: string) {
+    await this.client.send(
+      new PutObjectCommand({
+        Bucket: this.bucket,
+        Key: key,
+        Body: body,
+        ContentType: contentType,
       }),
     );
   }
