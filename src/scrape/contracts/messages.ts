@@ -58,7 +58,7 @@ export interface RunStats {
 
 export interface FinishedMessage {
   runId: string;
-  outcome: 'succeeded' | 'failed';
+  outcome: 'started' | 'succeeded' | 'failed';
   reason?: FailureReason;
   /** Reference to the stored result; the result itself never travels on the queue. */
   resultKey?: string;
@@ -148,8 +148,10 @@ export function parseScrapeMessage(input: unknown): ScrapeMessage {
 export function parseFinishedMessage(input: unknown): FinishedMessage {
   if (!isObj(input)) throw new InvalidMessageError('message must be an object');
   const outcome = input.outcome;
-  if (outcome !== 'succeeded' && outcome !== 'failed')
-    throw new InvalidMessageError('outcome must be succeeded or failed');
+  if (outcome !== 'started' && outcome !== 'succeeded' && outcome !== 'failed')
+    throw new InvalidMessageError(
+      'outcome must be started, succeeded or failed',
+    );
   const message: FinishedMessage = { runId: str(input, 'runId'), outcome };
   if (outcome === 'failed') {
     const reason = input.reason;

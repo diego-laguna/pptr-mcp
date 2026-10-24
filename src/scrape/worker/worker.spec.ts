@@ -49,8 +49,8 @@ describe('ScrapeWorker', () => {
     const out = await worker.handle(message, { remainingMs: () => 60_000 });
 
     expect(out.outcome).toBe('succeeded');
-    expect(sent).toHaveLength(1);
-    expect(JSON.stringify(sent[0]).length).toBeLessThan(1024);
+    expect(sent.map((m) => m.outcome)).toEqual(['started', 'succeeded']);
+    expect(JSON.stringify(sent[1]).length).toBeLessThan(1024);
     const stored = JSON.parse(
       (await results.get(out.resultKey!))!,
     ) as RunResult;
@@ -68,7 +68,7 @@ describe('ScrapeWorker', () => {
     const out = await worker.handle(message, { remainingMs: () => 1000 });
     expect(out).toMatchObject({ outcome: 'failed', reason: 'no_spec' });
     expect(execute).not.toHaveBeenCalled();
-    expect(sent).toHaveLength(1);
+    expect(sent.map((m) => m.outcome)).toEqual(['started', 'failed']);
   });
 
   it('reports invalid_spec without opening a browser', async () => {
@@ -113,7 +113,7 @@ describe('ScrapeWorker', () => {
     await expect(
       worker.handle(message, { remainingMs: () => 1000 }),
     ).rejects.toThrow('browser crashed');
-    expect(sent).toHaveLength(0);
+    expect(sent.map((m) => m.outcome)).toEqual(['started']);
   });
 
   it('does not import the database layer', async () => {

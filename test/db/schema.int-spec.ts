@@ -294,6 +294,7 @@ describe('down migration (3.5)', () => {
         'customers',
         'product_variants',
         'products',
+        'scrape_runs',
         'site_attention',
         'sites',
       ]);
