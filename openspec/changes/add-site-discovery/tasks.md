@@ -19,10 +19,10 @@
 
 ## 3. Discovery worker
 
-- [ ] 3.1 Implement the browsing guard with request interception (scheme allow-list, top-level navigation confined to the site domain and subdomains, connected-address check for private and link-local ranges including redirects, downloads disabled); verify tests against a local server that redirects to internal addresses, another domain and a CDN
-- [ ] 3.2 Configure the Agent SDK run: explicit tool allow-list (Puppeteer MCP plus the three spec tools, no shell, file or fetch tools), system prompt with the untrusted-content rule, schema snapshot and guidance, repair rounds limited to 3; verify a test that a denied tool request is refused and that free text without `submit_spec` yields no candidate
-- [ ] 3.3 Implement caps (turns, duration watchdog, cost or token ceiling) and usage recording; verify a test with a stubbed model that exceeding each cap fails the attempt with `cap_exceeded` and preserves usage
-- [ ] 3.4 Implement the worker entrypoint (read message, run, write candidate and evidence (including annotated screenshots) to S3 under the owner prefix, send the finished-attempt message, no database access, fresh browser profile and cleanup per attempt); verify with fakes that outcomes map to the failure reasons in the spec and that no database call occurs
+- [x] 3.1 Implement the browsing guard with request interception (scheme allow-list, top-level navigation confined to the site domain and subdomains, connected-address check for private and link-local ranges including redirects, downloads disabled); verify tests against a local server that redirects to internal addresses, another domain and a CDN
+- [x] 3.2 Configure the Agent SDK run: explicit tool allow-list (Puppeteer MCP plus the three spec tools, no shell, file or fetch tools), system prompt with the untrusted-content rule, schema snapshot and guidance, repair rounds limited to 3; verify a test that a denied tool request is refused and that free text without `submit_spec` yields no candidate
+- [x] 3.3 Implement caps (turns, duration watchdog, cost or token ceiling) and usage recording; verify a test with a stubbed model that exceeding each cap fails the attempt with `cap_exceeded` and preserves usage
+- [x] 3.4 Implement the worker entrypoint (read message, run, write candidate and evidence (including annotated screenshots) to S3 under the owner prefix, send the finished-attempt message, no database access, fresh browser profile and cleanup per attempt); verify with fakes that outcomes map to the failure reasons in the spec and that no database call occurs
 - [ ] 3.5 Run the worker locally against two of the five dev sites with the real model and record outcomes, usage, unresolved properties and any blocking; verify the findings are written in `docs/` and used to set the default caps
 
 ## 4. Finalization
