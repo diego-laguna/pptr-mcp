@@ -42,6 +42,13 @@ export interface DiscoveryFinalizerDeps {
   attempts: AttemptsRepository;
   specs: SpecStore;
   objects: ObjectStore;
+  /** Called after a version is stored, for example to start its preview. Failures never undo the version. */
+  onVersionStored?: (info: {
+    customerId: string;
+    siteId: string;
+    version: number;
+  }) => Promise<void>;
+  logger?: { warn(message: string): void };
 }
 
 /** Consumes the finished-attempt queue: stores verified candidates as immutable versions. */
@@ -127,7 +134,7 @@ export class DiscoveryFinalizer {
         `no longer in the schema: ${missing.join(', ')}`,
       );
 
-    await withTransaction(pool, async (client) => {
+    const stored = await withTransaction(pool, async (client) => {
       // Serialize finalizations per site so numbers are consecutive and distinct.
       await client.query('SELECT 1 FROM sites WHERE id = $1 FOR UPDATE', [
         attempt.siteId,
@@ -166,6 +173,18 @@ export class DiscoveryFinalizer {
           message.evidenceKey ?? null,
         ],
       );
+      return version;
     });
+    try {
+      await this.deps.onVersionStored?.({
+        customerId: attempt.customerId,
+        siteId: attempt.siteId,
+        version: stored,
+      });
+    } catch (error) {
+      this.deps.logger?.warn(
+        `version ${stored} of ${attempt.siteId} was stored but its preview could not be requested: ${(error as Error).message}`,
+      );
+    }
   }
 }

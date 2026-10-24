@@ -5,7 +5,7 @@ import { NotFoundError } from '../../catalog/errors.js';
 import { DiscoveryMode, SpecVersionRecord } from './types.js';
 
 const COLUMNS = `v.site_id, v.version, v.source, v.mode, v.attempt_id, v.base_version, v.schema_version,
-  v.bound_properties, v.created_at`;
+  v.bound_properties, v.discarded_at, v.created_at`;
 
 @Injectable()
 export class SpecVersionsRepository {
@@ -64,6 +64,7 @@ function toRecord(row: Record<string, unknown>): SpecVersionRecord {
     baseVersion: (row.base_version as number | null) ?? null,
     schemaVersion: row.schema_version as number,
     boundProperties: row.bound_properties as string[],
+    discardedAt: (row.discarded_at as Date | null) ?? null,
     createdAt: row.created_at as Date,
   };
 }

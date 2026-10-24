@@ -2,7 +2,8 @@ import { DiscoveryFinalizer } from '../../src/discovery/api/discovery-finalizer.
 import { NotFoundError } from '../../src/catalog/errors.js';
 import { validSpec } from '../../src/scrape/spec/spec-fixtures.js';
 import { SpecStore } from '../../src/scrape/spec/spec-store.js';
-import { activePointerKey, specKey } from '../../src/scrape/storage/keys.js';
+import { getActive, setActive } from '../support/active.js';
+import { specKey } from '../../src/scrape/storage/keys.js';
 import { createSite } from '../scrape/support.js';
 import { createTestDatabase, TestDatabase } from '../support/test-database.js';
 import { buildDiscoveryApp } from './support.js';
@@ -219,18 +220,13 @@ describe('activation is not touched', () => {
       const c = validSpec();
       c.items.locator = { css: `.v${i}` };
       if (i === 3) {
-        await h.objects.put(
-          activePointerKey(customer.id, site.id),
-          JSON.stringify({ version: 2 }),
-        );
+        await setActive(db.pool, site.id, 2);
       }
       await offer(await newAttempt(site.id), c);
     }
     expect(
       (await h.versions.list(customer.id, site.id)).map((v) => v.version),
     ).toEqual([3, 2, 1]);
-    expect(await h.objects.get(activePointerKey(customer.id, site.id))).toBe(
-      '{"version":2}',
-    );
+    expect(await getActive(db.pool, site.id)).toBe(2);
   });
 });

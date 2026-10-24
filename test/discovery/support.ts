@@ -1,6 +1,7 @@
 import { InternalAuthGuard } from '../../src/scrape/api/internal-auth.guard.js';
 import { SCRAPE_CONFIG } from '../../src/scrape/api/tokens.js';
-import { PointerActiveSpecResolver } from '../../src/scrape/api/active-spec.js';
+import { DbActiveSpecResolver } from '../../src/activation/db-active-spec.js';
+import { setActive } from '../support/active.js';
 import { AttemptsRepository } from '../../src/discovery/api/attempts.repository.js';
 import { InternalDiscoveryController } from '../../src/discovery/api/internal-discovery.controller.js';
 import { DiscoveryRequestService } from '../../src/discovery/api/discovery-request.service.js';
@@ -13,7 +14,7 @@ import {
 } from '../../src/discovery/api/types.js';
 import { validSpec } from '../../src/scrape/spec/spec-fixtures.js';
 import { SpecStore } from '../../src/scrape/spec/spec-store.js';
-import { activePointerKey, specKey } from '../../src/scrape/storage/keys.js';
+import { specKey } from '../../src/scrape/storage/keys.js';
 import { InMemoryObjectStore } from '../../src/scrape/storage/object-store.js';
 import { createSite } from '../scrape/support.js';
 import { TestDatabase } from '../support/test-database.js';
@@ -51,7 +52,7 @@ export async function buildDiscoveryApp(
   const queue = new RecordingQueue();
   const attempts = new AttemptsRepository(db.pool);
   const versions = new SpecVersionsRepository(db.pool);
-  const active = new PointerActiveSpecResolver(objects);
+  const active = new DbActiveSpecResolver(db.pool);
   const service = new DiscoveryRequestService({
     attempts,
     versions,
@@ -93,10 +94,6 @@ export async function siteWithVersions(
       specKey(ctx.customer.id, ctx.site.id, v),
       validSpec() as never,
     );
-  if (active !== undefined)
-    await objects.put(
-      activePointerKey(ctx.customer.id, ctx.site.id),
-      JSON.stringify({ version: active }),
-    );
+  if (active !== undefined) await setActive(db.pool, ctx.site.id, active);
   return ctx;
 }

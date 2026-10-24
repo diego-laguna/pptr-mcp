@@ -9,7 +9,8 @@ import puppeteer from 'puppeteer-core';
 import request from 'supertest';
 import { App } from 'supertest/types.js';
 import { ProductsRepository } from '../../src/catalog/products.repository.js';
-import { PointerActiveSpecResolver } from '../../src/scrape/api/active-spec.js';
+import { DbActiveSpecResolver } from '../../src/activation/db-active-spec.js';
+import { setActive } from '../support/active.js';
 import { InternalAuthGuard } from '../../src/scrape/api/internal-auth.guard.js';
 import { InternalScrapeController } from '../../src/scrape/api/internal-scrape.controller.js';
 import { RunFinalizer } from '../../src/scrape/api/run-finalizer.js';
@@ -33,7 +34,7 @@ import {
 import { runWithBrowser } from '../../src/scrape/runner/runner.js';
 import { validateSelectorSpec } from '../../src/scrape/spec/spec-validator.js';
 import { SpecStore } from '../../src/scrape/spec/spec-store.js';
-import { activePointerKey, specKey } from '../../src/scrape/storage/keys.js';
+import { specKey } from '../../src/scrape/storage/keys.js';
 import { InMemoryObjectStore } from '../../src/scrape/storage/object-store.js';
 import { InMemoryScrapeQueue } from '../../src/scrape/testing/in-memory-queue.js';
 import { ScrapeWorker } from '../../src/scrape/worker/worker.js';
@@ -121,7 +122,7 @@ describe.skipIf(!existsSync(chrome))(
           { provide: SPEC_STORE, useValue: specs },
           {
             provide: ACTIVE_SPEC_RESOLVER,
-            useValue: new PointerActiveSpecResolver(objects),
+            useValue: new DbActiveSpecResolver(db.pool),
           },
           { provide: SCRAPE_QUEUE, useValue: queue },
           {
@@ -200,10 +201,7 @@ describe.skipIf(!existsSync(chrome))(
         specKey(ctx.customer.id, ctx.site.id, 1),
         specFor(url) as never,
       );
-      await objects.put(
-        activePointerKey(ctx.customer.id, ctx.site.id),
-        JSON.stringify({ version: 1 }),
-      );
+      await setActive(db.pool, ctx.site.id, 1);
       return ctx;
     }
 

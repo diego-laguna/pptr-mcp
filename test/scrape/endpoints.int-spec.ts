@@ -5,7 +5,8 @@ import {
 } from '@nestjs/platform-fastify';
 import request from 'supertest';
 import { App } from 'supertest/types.js';
-import { PointerActiveSpecResolver } from '../../src/scrape/api/active-spec.js';
+import { DbActiveSpecResolver } from '../../src/activation/db-active-spec.js';
+import { getActive, setActive } from '../support/active.js';
 import { InternalAuthGuard } from '../../src/scrape/api/internal-auth.guard.js';
 import { InternalScrapeController } from '../../src/scrape/api/internal-scrape.controller.js';
 import { RunsRepository } from '../../src/scrape/api/runs.repository.js';
@@ -18,7 +19,7 @@ import {
 } from '../../src/scrape/api/tokens.js';
 import { validSpec } from '../../src/scrape/spec/spec-fixtures.js';
 import { SpecStore } from '../../src/scrape/spec/spec-store.js';
-import { activePointerKey, specKey } from '../../src/scrape/storage/keys.js';
+import { specKey } from '../../src/scrape/storage/keys.js';
 import { InMemoryObjectStore } from '../../src/scrape/storage/object-store.js';
 import { InMemoryScrapeQueue } from '../../src/scrape/testing/in-memory-queue.js';
 import { createTestDatabase, TestDatabase } from '../support/test-database.js';
@@ -49,7 +50,7 @@ beforeAll(async () => {
       { provide: SPEC_STORE, useValue: specs },
       {
         provide: ACTIVE_SPEC_RESOLVER,
-        useValue: new PointerActiveSpecResolver(objects),
+        useValue: new DbActiveSpecResolver(db.pool),
       },
       { provide: SCRAPE_QUEUE, useValue: queue },
       {
@@ -86,11 +87,7 @@ async function siteWithSpecs(
       specKey(ctx.customer.id, ctx.site.id, v),
       validSpec() as never,
     );
-  if (active !== undefined)
-    await objects.put(
-      activePointerKey(ctx.customer.id, ctx.site.id),
-      JSON.stringify({ version: active }),
-    );
+  if (active !== undefined) await setActive(db.pool, ctx.site.id, active);
   return ctx;
 }
 
@@ -175,7 +172,7 @@ describe('POST /internal/sites/:siteId/refresh', () => {
 
 describe('POST /internal/sites/:siteId/preview', () => {
   it('enqueues a limited preview of a candidate version and leaves the active spec alone', async () => {
-    const { customer, site } = await siteWithSpecs('Preview', [1, 2], 1);
+    const { site } = await siteWithSpecs('Preview', [1, 2], 1);
     const res = await http()
       .post(`/internal/sites/${site.id}/preview`)
       .set(auth)
@@ -189,10 +186,7 @@ describe('POST /internal/sites/:siteId/preview', () => {
       limits: { maxPages: 2, maxItems: 20 },
     });
     expect(sent.deduplicationId).toBe(`${site.id}:preview:2`);
-    const pointer = JSON.parse(
-      (await objects.get(activePointerKey(customer.id, site.id)))!,
-    );
-    expect(pointer.version).toBe(1);
+    expect(await getActive(db.pool, site.id)).toBe(1);
   });
 
   it('answers 404 for an unknown spec version and 400 for a bad body', async () => {
