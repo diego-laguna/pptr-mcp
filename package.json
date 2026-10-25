@@ -19,7 +19,8 @@
     "migrate:up": "node-pg-migrate up -m migrations -j sql",
     "migrate:down": "node-pg-migrate down -m migrations -j sql",
     "test:int": "vitest run --config ./vitest.config.integration.ts",
-    "seed:dev": "SEED_DEV_DATA=true node dist/seed/run-seed.js"
+    "seed:dev": "SEED_DEV_DATA=true node dist/seed/run-seed.js",
+    "discover:local": "node dist/discovery/local/main.js"
   },
   "repository": {
     "type": "git",

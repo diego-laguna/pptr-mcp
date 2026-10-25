@@ -22,6 +22,7 @@ export class UnsafeUrlError extends Error {
 export async function assertSafeSiteUrl(
   input: string,
   resolve: HostResolver = systemResolver,
+  isBlocked: (address: string) => boolean = isBlockedAddress,
 ): Promise<URL> {
   let url: URL;
   try {
@@ -46,7 +47,7 @@ export async function assertSafeSiteUrl(
   }
   if (addresses.length === 0)
     throw new UnsafeUrlError(`the host ${host} has no addresses`);
-  const bad = addresses.find(isBlockedAddress);
+  const bad = addresses.find(isBlocked);
   if (bad)
     throw new UnsafeUrlError(
       `the host ${host} resolves to a non-public address (${bad})`,

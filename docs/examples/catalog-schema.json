@@ -1,0 +1,29 @@
+{
+  "properties": [
+    {
+      "name": "gender",
+      "type": "enum",
+      "description": "Who the item is for",
+      "required": true,
+      "filterable": true,
+      "values": ["boys", "girls", "unisex"]
+    },
+    {
+      "name": "fabric",
+      "type": "string",
+      "description": "Main fabric",
+      "required": false,
+      "filterable": true,
+      "example": "cotton"
+    },
+    {
+      "name": "size",
+      "type": "string",
+      "description": "Size of the variant",
+      "required": true,
+      "filterable": true,
+      "variant": true,
+      "example": "4"
+    }
+  ]
+}

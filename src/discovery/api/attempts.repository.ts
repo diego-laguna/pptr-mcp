@@ -11,6 +11,8 @@ import {
   SchemaSnapshot,
   Usage,
 } from './types.js';
+import { snapshotFromSchema } from './snapshot.js';
+import type { PropertyDefinition } from '../../catalog/schema/property-types.js';
 
 const COLUMNS = `a.id, a.site_id, a.mode, a.target_properties, a.guidance, a.base_version, a.schema_version,
   a.status, a.reason, a.detail, a.spec_version, a.usage, a.evidence_key, a.requested_at, a.started_at, a.finished_at`;
@@ -53,18 +55,11 @@ export class AttemptsRepository {
       customerId: row.customer_id,
       catalogId: row.catalog_id,
       url: row.url,
-      snapshot: {
-        schemaVersion: row.schema_version,
-        properties: (row.properties as Record<string, unknown>[]).map((p) => ({
-          name: p.name as string,
-          type: p.type as never,
-          description: p.description as string,
-          ...(p.example !== undefined ? { example: p.example } : {}),
-          ...(p.values !== undefined ? { values: p.values as string[] } : {}),
-          required: p.required === true,
-        })),
-        variantProperty: row.variant_property ?? null,
-      },
+      snapshot: snapshotFromSchema(
+        { properties: row.properties as PropertyDefinition[] },
+        row.schema_version,
+        row.variant_property ?? null,
+      ),
     };
   }
 

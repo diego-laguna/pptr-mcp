@@ -8,6 +8,8 @@ RUN pnpm install --frozen-lockfile
 COPY tsconfig.json tsconfig.build.json nest-cli.json ./
 COPY src ./src
 RUN pnpm build
+# The local discovery CLI is a developer tool and does not belong in a deployed image.
+RUN rm -rf dist/discovery/local
 RUN rm -rf node_modules && pnpm install --prod --frozen-lockfile --config.node-linker=hoisted
 
 FROM public.ecr.aws/lambda/nodejs:22

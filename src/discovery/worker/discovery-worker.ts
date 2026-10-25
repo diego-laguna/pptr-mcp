@@ -52,6 +52,8 @@ export interface DiscoveryWorkerDeps {
   previewLimits?: { maxPages: number; maxItems: number };
   thresholds?: Partial<VerifyThresholds>;
   resolveHost?: HostResolver;
+  /** Address predicate for the up-front URL check; production uses the default. */
+  isBlocked?: (address: string) => boolean;
   /** Test hook for the guard's address predicate. */
   guardOptions?: {
     isBlocked?: (address: string) => boolean;
@@ -98,6 +100,7 @@ export class DiscoveryWorker {
       await assertSafeSiteUrl(
         message.siteUrl,
         this.deps.resolveHost ?? systemResolver,
+        this.deps.isBlocked,
       );
     } catch (error) {
       if (error instanceof UnsafeUrlError)

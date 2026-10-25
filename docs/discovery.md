@@ -41,6 +41,18 @@ The API assigns the next per-site number in a transaction (locking the site row)
 
 `CHROME_PATH=/usr/bin/google-chrome` plus `RESULTS_BUCKET`, `DISCOVERY_QUEUE_URL`, `DISCOVERY_FINISHED_QUEUE_URL` and model access, then `node dist/discovery/worker/main.js`. Model access is the Agent SDK's: `ANTHROPIC_API_KEY`, or `CLAUDE_CODE_USE_BEDROCK=1` with an IAM role (set `DISCOVERY_MODEL_PROVIDER=bedrock` when deploying `infra/` to grant `bedrock:InvokeModel`).
 
+## Running an attempt locally
+
+`pnpm build`, then `pnpm discover:local <site-url> --schema <catalog-schema.json>` runs one attempt on this machine with the production worker, guard and verifier. There is no database, queue or AWS: output goes to `.local-discovery/<attempt>/` (`candidate.json`, `evidence.json`, `screenshots/`, `result.json`; a base spec is copied in as `base.json`). Each run gets its own directory.
+
+- **Schema file**: a catalog schema as stored, `{"properties": [...]}` with `filterable` and an optional `variant: true`. It is validated like a real schema; the attempt sees the same snapshot production would derive. See `docs/examples/catalog-schema.json`.
+- **Model access**: `ANTHROPIC_API_KEY`, or `CLAUDE_CODE_USE_BEDROCK=1` with AWS credentials. Checked before Chrome starts. Set `CHROME_PATH` to a Chrome binary.
+- **Modes**: `--mode incremental|repair` need `--base <spec.json>`; name properties with `--properties a,b` (incremental defaults to every unbound property, repair needs them named).
+- **Caps**: default to 15 turns, 5 minutes and $1, lower than production; override with `--max-turns`, `--max-minutes`, `--max-cost`. Every run prints actual turns, time and cost, which is the data for choosing production defaults.
+- **`--allow-private`**: lets loopback and private (RFC 1918) addresses through so a fixture or your own site on `localhost` can be used. Domain confinement, schemes and the link-local and cloud-metadata ranges stay blocked, and the run says the flag was on. It is an option only, never read from the environment, and the CLI is removed from the worker images.
+
+Real runs call the model and cost money, and visit the site: use sites you are allowed to scrape.
+
 ## Not yet done
 
 - The default caps above come from guesses, not measurements: task 3.5 (two real attempts against dev sites) needs model access and has not been run.
