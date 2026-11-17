@@ -115,3 +115,13 @@ describe('scheduler', () => {
     template.hasResourceProperties('AWS::Scheduler::ScheduleGroup', { Name: 'scrapes' });
   });
 });
+
+describe('local stub images', () => {
+  const local = Template.fromStack(
+    new ScrapeStack(new App(), 'Local', { repoRoot, localStubImages: true, env: { account: '111111111111', region: 'us-east-1' } }),
+  );
+
+  it('deploys the worker as an inline zip function, not a container image', () => {
+    local.hasResourceProperties('AWS::Lambda::Function', { PackageType: Match.absent(), Handler: 'index.handler' });
+  });
+});

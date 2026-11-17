@@ -26,6 +26,8 @@ export interface DiscoveryStackProps extends StackProps {
   modelProvider?: 'anthropic' | 'bedrock';
   /** Name of the Secrets Manager secret holding ANTHROPIC_API_KEY (anthropic provider). */
   apiKeySecretName?: string;
+  /** Local emulator runs: use a public stub image instead of building Dockerfile.discovery. */
+  localStubImages?: boolean;
 }
 
 /** Discovery queue, finished-attempt queue and the Fargate worker service that scales 0 to 2 on queue depth. */
@@ -109,7 +111,9 @@ export class DiscoveryStack extends Stack {
       );
     }
     taskDefinition.addContainer('worker', {
-      image: ecs.ContainerImage.fromAsset(repoRoot, { file: 'Dockerfile.discovery' }),
+      image: props.localStubImages
+        ? ecs.ContainerImage.fromRegistry('public.ecr.aws/docker/library/busybox:stable')
+        : ecs.ContainerImage.fromAsset(repoRoot, { file: 'Dockerfile.discovery' }),
       logging: ecs.LogDrivers.awsLogs({ streamPrefix: 'discovery' }),
       environment: {
         RESULTS_BUCKET: props.bucket.bucketName,
