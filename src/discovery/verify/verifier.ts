@@ -14,6 +14,11 @@ export interface VerifyThresholds {
   systemFieldCoverage: number;
   /** Share of the links that must be distinct absolute URLs. */
   distinctLinks: number;
+  /**
+   * Share of the thumbnails that must be distinct URLs. A few products can share
+   * an image, but a badge or placeholder picked up on every card collapses it.
+   */
+  distinctThumbnails: number;
   /** Share of present raw values that must parse, per bound property. */
   minParseRate: number;
 }
@@ -22,6 +27,7 @@ export const DEFAULT_THRESHOLDS: VerifyThresholds = {
   minItems: 5,
   systemFieldCoverage: 0.95,
   distinctLinks: 0.95,
+  distinctThumbnails: 0.5,
   minParseRate: 0.8,
 };
 
@@ -115,6 +121,18 @@ export function evaluateRun(
     name: 'distinct_absolute_links',
     passed: linkShare >= t.distinctLinks,
     detail: `${distinct} distinct absolute links among ${links.length} (${pct(linkShare)}), at least ${pct(t.distinctLinks)} required`,
+  });
+
+  const thumbnails = run.rawItems
+    .map((i) => i.system.thumbnail_url)
+    .filter((u): u is string => !!u);
+  const distinctThumbs = new Set(thumbnails).size;
+  const thumbShare =
+    thumbnails.length === 0 ? 0 : distinctThumbs / thumbnails.length;
+  checks.push({
+    name: 'distinct_thumbnails',
+    passed: thumbShare >= t.distinctThumbnails,
+    detail: `${distinctThumbs} distinct thumbnail URLs among ${thumbnails.length} (${pct(thumbShare)}), at least ${pct(t.distinctThumbnails)} required; if most items share one URL the locator is likely matching a badge, icon or placeholder instead of the product image`,
   });
 
   const result = { items: run.items } as RunResult;

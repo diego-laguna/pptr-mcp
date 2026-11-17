@@ -26,6 +26,17 @@ const text = (value: string) => ({
   content: [{ type: 'text' as const, text: value }],
 });
 
+/**
+ * What each system field means. They are not schema properties (their names are
+ * reserved), so the schema cannot describe them; this is the only place the agent
+ * learns what to bind to each.
+ */
+export const SYSTEM_FIELD_GUIDE = `System fields (all four are required in the spec; bind each on the listing card, relative to the item element):
+- name: the product's display name as a shopper reads it on the card, not the brand, category or collection label.
+- link: the href of the link to the product's own page.
+- price: the current selling price as shown on the site, including the currency symbol; never a struck-through or "before" price.
+- thumbnail_url: the src of the product's main image on the card.`;
+
 export function buildSystemPrompt(message: DiscoveryMessage): string {
   const schema = message.snapshot.properties
     .map(
@@ -43,6 +54,8 @@ export function buildSystemPrompt(message: DiscoveryMessage): string {
 The catalog schema (the properties a customer wants extracted):
 ${schema}
 ${message.snapshot.variantProperty ? `The variant property is "${message.snapshot.variantProperty}": bind it under "variants" (value, price, availability per option), not under "properties".` : ''}
+
+${SYSTEM_FIELD_GUIDE}
 
 Task: ${modeRules[message.mode]}
 ${message.mode !== 'full' ? `The base spec is the one the site currently uses. Do not rewrite it.` : ''}

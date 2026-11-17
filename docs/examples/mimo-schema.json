@@ -1,0 +1,20 @@
+{
+  "properties": [
+    {
+      "name": "size",
+      "type": "string_list",
+      "description": "The item available sizes is within article elements, look for the dropdown or select element between the text 'Talle' and 'Comprar' button. Return each size as a separate entry.",
+      "required": false,
+      "filterable": true,
+      "example": ["S (3-6 meses)", "M (6-9 meses)", "L (9-12 meses)"]
+    },
+    {
+      "name": "installment",
+      "type": "string",
+      "description": "The item installment is within article elements, look for a text containing 'CUOTAS SIN INTERES DE' with the total installments and installment amount, shown directly under the price. Copy the whole line. Leave it empty when the item shows no installment offer.",
+      "required": false,
+      "filterable": true,
+      "example": "3 CUOTAS SIN INTERES DE $11.200"
+    }
+  ]
+}
