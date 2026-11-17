@@ -20,6 +20,8 @@ export interface ScrapeStackProps extends StackProps {
   maxConcurrentScrapes?: number;
   /** Absolute path of the repository root, where Dockerfile.worker lives. */
   repoRoot?: string;
+  /** Local emulator runs: swap the Docker image for an inline stub so no image build or registry is needed. */
+  localStubImages?: boolean;
 }
 
 const LAMBDA_TIMEOUT = Duration.seconds(900);
@@ -27,7 +29,7 @@ const LAMBDA_TIMEOUT = Duration.seconds(900);
 /** Queues, storage and the scrape worker; the API's runtime is defined elsewhere and only its role is created here. */
 export class ScrapeStack extends Stack {
   readonly apiRole: iam.Role;
-  readonly workerFunction: lambda.DockerImageFunction;
+  readonly workerFunction: lambda.Function;
   readonly bucket: s3.Bucket;
 
   constructor(scope: Construct, id: string, props: ScrapeStackProps = {}) {
@@ -81,18 +83,25 @@ export class ScrapeStack extends Stack {
     }));
 
     // --- worker (outside any VPC, no database access) -----------------
-    this.workerFunction = new lambda.DockerImageFunction(this, 'Worker', {
-      code: lambda.DockerImageCode.fromImageAsset(repoRoot, {
-        file: 'Dockerfile.worker',
-      }),
+    const workerSettings = {
       memorySize: 2048,
-      ephemeralStorageSize: undefined,
       timeout: LAMBDA_TIMEOUT,
       environment: {
         RESULTS_BUCKET: bucket.bucketName,
         RESULTS_QUEUE_URL: resultsQueue.queueUrl,
       },
-    });
+    };
+    this.workerFunction = props.localStubImages
+      ? new lambda.Function(this, 'Worker', {
+          ...workerSettings,
+          runtime: lambda.Runtime.NODEJS_22_X,
+          handler: 'index.handler',
+          code: lambda.Code.fromInline('exports.handler = async () => ({ batchItemFailures: [] });'),
+        })
+      : new lambda.DockerImageFunction(this, 'Worker', {
+          ...workerSettings,
+          code: lambda.DockerImageCode.fromImageAsset(repoRoot, { file: 'Dockerfile.worker' }),
+        });
     this.workerFunction.addEventSource(
       new sources.SqsEventSource(scrapeQueue, {
         batchSize: 1,

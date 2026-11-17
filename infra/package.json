@@ -5,6 +5,8 @@
   "type": "module",
   "scripts": {
     "synth": "cdk synth",
+    "local:deploy": "bash scripts/local-deploy.sh",
+    "local:destroy": "bash scripts/local-deploy.sh --destroy",
     "test": "vitest run"
   },
   "dependencies": {
