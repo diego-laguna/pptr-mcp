@@ -19,7 +19,8 @@
     "migrate:up": "node-pg-migrate up -m migrations -j sql",
     "migrate:down": "node-pg-migrate down -m migrations -j sql",
     "test:int": "vitest run --config ./vitest.config.integration.ts",
-    "seed:dev": "SEED_DEV_DATA=true node dist/seed/run-seed.js"
+    "seed:dev": "SEED_DEV_DATA=true node dist/seed/run-seed.js",
+    "discover:local": "node dist/discovery/local/main.js"
   },
   "repository": {
     "type": "git",
@@ -35,13 +36,22 @@
   },
   "homepage": "https://github.com/diego-laguna/pptr-mcp#readme",
   "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.3.310",
+    "@aws-sdk/client-s3": "^3.1156.0",
+    "@aws-sdk/client-scheduler": "^3.1156.0",
+    "@aws-sdk/client-sqs": "^3.1156.0",
     "@nestjs/common": "^12.0.1",
     "@nestjs/core": "^12.0.1",
     "@nestjs/platform-fastify": "^12.1.2",
+    "@sparticuz/chromium": "^153.0.0",
+    "css-what": "^8.0.0",
     "node-pg-migrate": "^9.0.0",
     "pg": "^8.23.1",
+    "puppeteer-core": "^25.16.0",
     "reflect-metadata": "^0.2.2",
-    "rxjs": "^7.8.1"
+    "rxjs": "^7.8.1",
+    "xpath": "^0.0.35",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@fission-ai/openspec": "^1.14.0",

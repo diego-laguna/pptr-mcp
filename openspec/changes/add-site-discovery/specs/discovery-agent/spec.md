@@ -51,7 +51,7 @@ The submitted candidate SHALL pass selector-spec validation, SHALL bind every sy
 - **THEN** the validation errors are returned to the agent as a repair round
 
 ### Requirement: Live verification by the production runner
-A candidate SHALL be verified by executing it with the same runner used for scraping against the live site within preview limits, and SHALL be offered only if it extracts at least the minimum number of items, binds the system fields for at least 95% of items, yields distinct absolute links, and parses each bound property for at least 80% of items that have raw text for it.
+A candidate SHALL be verified by executing it with the same runner used for scraping against the live site within preview limits, and SHALL be offered only if it extracts at least the minimum number of items, binds the system fields for at least 95% of items, yields distinct absolute links and mostly distinct thumbnail URLs, and parses each bound property for at least 80% of items that have raw text for it.
 
 #### Scenario: Candidate passes
 - **WHEN** the verification run extracts 40 items with all checks above their thresholds

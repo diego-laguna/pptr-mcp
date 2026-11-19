@@ -292,9 +292,15 @@ describe('down migration (3.5)', () => {
         'catalog_schema_versions',
         'catalogs',
         'customers',
+        'discovery_attempts',
         'product_variants',
         'products',
+        'scrape_runs',
+        'site_activations',
+        'site_active_specs',
         'site_attention',
+        'site_schedules',
+        'site_spec_versions',
         'sites',
       ]);
 
